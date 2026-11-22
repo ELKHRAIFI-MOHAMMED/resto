@@ -1,12 +1,13 @@
 import { useTranslation } from 'react-i18next'
 
 import { LANGUAGE_META, SUPPORTED_LANGUAGES } from '@/i18n/languages'
+import { cx } from '@/lib/cx'
 
 export function LanguageSwitcher() {
   const { t, i18n } = useTranslation()
 
   return (
-    <div role="group" aria-label={t('language.label')} className="flex items-center gap-1">
+    <div role="group" aria-label={t('language.label')} className="flex items-center">
       {SUPPORTED_LANGUAGES.map((language) => {
         const { nativeName, shortLabel } = LANGUAGE_META[language]
         const isActive = i18n.resolvedLanguage === language
@@ -19,13 +20,12 @@ export function LanguageSwitcher() {
             aria-label={t('language.switchTo', { language: nativeName })}
             title={nativeName}
             onClick={() => void i18n.changeLanguage(language)}
-            className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
-              isActive
-                ? 'bg-accent font-semibold text-background'
-                : 'text-muted hover:text-foreground'
-            }`}
+            className={cx(
+              'min-h-10 px-1.5 text-sm transition-colors sm:px-2.5',
+              isActive ? 'text-accent' : 'text-muted hover:text-foreground',
+            )}
           >
-            {shortLabel}
+            <span className={cx('pb-0.5', isActive && 'border-b border-accent')}>{shortLabel}</span>
           </button>
         )
       })}

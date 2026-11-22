@@ -1,28 +1,124 @@
 {
   "brand": {
     "name": "RestoFlow",
-    "tagline": "Generous cooking, ordered in a few taps."
+    "tagline": "Generous cooking, delivered in Casablanca"
   },
   "nav": {
     "home": "Home",
-    "mainNavigation": "Main navigation"
+    "menu": "Menu",
+    "info": "Visit us",
+    "mainNavigation": "Main navigation",
+    "skipToContent": "Skip to content",
+    "cartLabel_one": "Cart, {{count}} item",
+    "cartLabel_other": "Cart, {{count}} items",
+    "breadcrumb": "Breadcrumb"
   },
   "language": {
     "label": "Language",
     "switchTo": "Switch to {{language}}"
   },
-  "home": {
-    "metaDescription": "Order your favourite dishes online and complete your order on WhatsApp.",
-    "foundationNotice": "Technical foundations are in place. The menu and online ordering arrive in the next phases."
-  },
-  "status": {
-    "title": "System status",
-    "api": "API",
-    "database": "Database",
-    "checking": "Checking…",
-    "ok": "Operational",
+  "common": {
+    "retry": "Try again",
+    "loading": "Loading…",
     "unavailable": "Unavailable",
-    "retry": "Retry"
+    "insteadOf": "instead of {{price}}",
+    "loadError": "This information could not be loaded.",
+    "networkError": "No connection. Check your network and try again.",
+    "close": "Close"
+  },
+  "home": {
+    "metaDescription": "Burgers, tacos, pizzas and Moroccan sweets in Casablanca. Pick your dishes and send your order on WhatsApp.",
+    "heroTitle": "Your neighbourhood table, delivered.",
+    "heroText": "Burgers, tacos, pizzas and Moroccan sweets, cooked to order. Fill your cart, send it on WhatsApp, and we take it from there.",
+    "orderNow": "Order now",
+    "seeMenu": "See the menu",
+    "openNow": "Open now",
+    "closedNow": "Closed right now",
+    "closedToday": "Closed today",
+    "notAcceptingOrders": "Online orders are paused for now.",
+    "featuredTitle": "What our guests order most",
+    "menuTitle": "The menu",
+    "menuText": "Everything is cooked to order.",
+    "dishCount_one": "{{count}} dish",
+    "dishCount_other": "{{count}} dishes",
+    "stepsTitle": "Ordering in three steps",
+    "step1Title": "Pick your dishes",
+    "step1Text": "Build your cart from the menu: size, extras and notes for the kitchen.",
+    "step2Title": "Send it on WhatsApp",
+    "step2Text": "We prepare the message with the exact total. All you have to do is press Send.",
+    "step3Title": "The restaurant confirms",
+    "step3Text": "We reply on WhatsApp to confirm your order and the delivery time.",
+    "deliveryZones_one": "Delivery to {{count}} neighbourhood",
+    "deliveryZones_other": "Delivery to {{count}} neighbourhoods",
+    "freeDelivery": "Free delivery from {{amount}}",
+    "minimumOrder": "{{amount}} minimum for delivery",
+    "pickup": "Pickup, no minimum",
+    "galleryTitle": "On the plate",
+    "infoTitle": "Visit us",
+    "hoursTitle": "Opening hours",
+    "contactTitle": "Find us",
+    "closed": "Closed",
+    "today": "Today",
+    "call": "Call",
+    "whatsapp": "Message on WhatsApp",
+    "directions": "Get directions",
+    "socialTitle": "Follow us"
+  },
+  "menu": {
+    "title": "Menu",
+    "metaDescription": "The full menu: burgers, tacos, pizzas, salads, desserts and drinks. Prices in dirhams, order on WhatsApp.",
+    "searchLabel": "Search the menu",
+    "searchPlaceholder": "Burger, tea, salad…",
+    "clearSearch": "Clear search",
+    "allCategories": "All",
+    "categoriesLabel": "Menu sections",
+    "results_one": "{{count}} dish for “{{query}}”",
+    "results_other": "{{count}} dishes for “{{query}}”",
+    "noResults": "No dish matches “{{query}}”.",
+    "noResultsHint": "Try another word or browse the sections.",
+    "empty": "The menu is empty for now.",
+    "add": "Add",
+    "addLabel": "Add {{name}} to cart",
+    "choose": "Choose",
+    "chooseLabel": "Choose options for {{name}}",
+    "added": "{{name}} added to your cart",
+    "viewCart": "View cart"
+  },
+  "product": {
+    "metaFallback": "{{name}}, available for delivery or pickup.",
+    "variants": "Size",
+    "addons": "Extras",
+    "required": "required",
+    "optional": "optional",
+    "quantity": "Quantity",
+    "decrease": "Remove one",
+    "increase": "Add one",
+    "instructions": "Notes for the kitchen",
+    "instructionsPlaceholder": "No onions, well done…",
+    "charactersLeft_one": "{{count}} character left",
+    "charactersLeft_other": "{{count}} characters left",
+    "total": "Total",
+    "addToCart": "Add to cart",
+    "chooseVariant": "Choose a size to continue.",
+    "unavailable": "This dish is not available right now.",
+    "notFoundTitle": "This dish is no longer on the menu",
+    "notFoundText": "It may have been removed or renamed. The rest of the menu is waiting for you.",
+    "showPhoto": "Show photo {{index}}",
+    "estimateNote": "The exact total is confirmed before you send your order."
+  },
+  "cart": {
+    "title": "Your cart",
+    "metaDescription": "The dishes you picked.",
+    "empty": "Your cart is empty.",
+    "emptyHint": "Browse the menu and add your dishes.",
+    "browse": "See the menu",
+    "remove": "Remove {{name}}",
+    "quantityOf": "Quantity of {{name}}",
+    "subtotal": "Estimated subtotal",
+    "totalNote": "Delivery and the exact total are calculated before you send your order.",
+    "continue": "Keep browsing",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items"
   },
   "notFound": {
     "title": "Page not found",
@@ -30,6 +126,7 @@
     "backHome": "Back to home"
   },
   "footer": {
-    "rights": "© {{year}} {{name}}. All rights reserved."
+    "rights": "© {{year}} {{name}}",
+    "credits": "Demo photos: Unsplash"
   }
 }

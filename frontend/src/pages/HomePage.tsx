@@ -1,23 +1,49 @@
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useLocation } from 'react-router'
 
-import { SystemStatus } from '@/components/SystemStatus'
+import { FeaturedDishes } from '@/features/home/FeaturedDishes'
+import { Gallery } from '@/features/home/Gallery'
+import { Hero } from '@/features/home/Hero'
+import { HowToOrder } from '@/features/home/HowToOrder'
+import { MenuBoard } from '@/features/home/MenuBoard'
+import { VisitUs } from '@/features/home/VisitUs'
+import { useOpeningHours, useRestaurant } from '@/hooks/useCatalog'
+import { restaurantStructuredData } from '@/lib/structuredData'
 
-/** Phase 1 placeholder: replaced by the full homepage in Phase 3. */
 export function HomePage() {
   const { t } = useTranslation()
+  const { hash } = useLocation()
+  const { data: restaurant } = useRestaurant()
+  const { data: hours } = useOpeningHours()
+  const name = restaurant?.name ?? t('brand.name')
+
+  // React Router does not scroll to #anchors by itself.
+  useEffect(() => {
+    if (!hash) return
+    const target = document.getElementById(hash.slice(1))
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [hash, restaurant])
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-10 px-4 py-16 text-center sm:px-6">
-      <title>{`${t('brand.name')} — ${t('brand.tagline')}`}</title>
+    <>
+      <title>{`${name} | ${t('brand.tagline')}`}</title>
       <meta name="description" content={t('home.metaDescription')} />
+      <meta property="og:title" content={name} />
+      <meta property="og:description" content={t('home.metaDescription')} />
+      <meta property="og:type" content="restaurant" />
+      {restaurant && hours && (
+        <script type="application/ld+json">
+          {JSON.stringify(restaurantStructuredData(restaurant, hours, window.location.origin))}
+        </script>
+      )}
 
-      <div className="space-y-4">
-        <h1 className="font-display text-5xl text-accent sm:text-6xl">{t('brand.name')}</h1>
-        <p className="text-lg text-foreground sm:text-xl">{t('brand.tagline')}</p>
-        <p className="mx-auto max-w-prose text-sm text-muted">{t('home.foundationNotice')}</p>
-      </div>
-
-      <SystemStatus />
-    </div>
+      <Hero />
+      <FeaturedDishes />
+      <MenuBoard />
+      <HowToOrder />
+      <Gallery />
+      <VisitUs />
+    </>
   )
 }

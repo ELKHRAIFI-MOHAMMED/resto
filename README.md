@@ -9,10 +9,11 @@ zones, settings and orders from a private dashboard.
 Prices are in Moroccan dirhams (MAD). There is no online payment: orders are
 paid on delivery or pickup.
 
-> **Project status: Phase 2 (backend) complete.** The Django REST API is
-> functional and tested: catalog, pricing, order creation with WhatsApp
-> hand-off, admin authentication and management endpoints. The user interface
-> is built in the next phases (see [Roadmap](#roadmap)).
+> **Project status: Phase 3 (public frontend) complete.** The tested Django
+> API is in place, and so are the public site (homepage, menu, product pages)
+> and a saved cart, in French, Arabic (right-to-left) and English. Checkout
+> with the WhatsApp hand-off and the admin dashboard come next (see
+> [Roadmap](#roadmap)).
 
 ---
 
@@ -20,8 +21,8 @@ paid on delivery or pickup.
 
 | Area | Highlights | Status |
 | --- | --- | --- |
-| Public site | Homepage, menu with category filters and search, product detail with variants and add-ons | API ✅ · UI in Phase 3 |
-| Ordering | Server-side pricing and quotes, delivery zones, fees and minimums, order snapshots, WhatsApp message | API ✅ · cart and checkout UI in Phase 4 |
+| Public site | Homepage, menu with category filters and search, product detail with variants and add-ons | ✅ |
+| Ordering | Server-side pricing and quotes, delivery zones, fees and minimums, order snapshots, WhatsApp message | API ✅ · cart ✅ · checkout UI in Phase 4 |
 | Administration | Dashboard stats, product/category/order management, delivery zones, restaurant settings, manual status workflow | API ✅ · UI in Phase 5 |
 | Multilingual | French (default), Arabic with full RTL layout, English; translated catalog content | ✅ |
 | API | REST, OpenAPI/Swagger docs, pagination, filtering, search, consistent error codes | ✅ |
@@ -54,7 +55,14 @@ Details: [docs/architecture.md](docs/architecture.md).
 
 ## Screenshots
 
-Screenshots will be added once the public site is built (Phase 3).
+Screenshots of the full flow will be added once checkout is built (Phase 4).
+
+## Design
+
+Casablanca Art Deco on the brand's black and brass palette: Italiana and Jost
+for Latin text, Reem Kufi and Noto Naskh for Arabic, food photography framed
+in a Moroccan arch, and a menu laid out like a printed menu card. See
+[docs/architecture.md](docs/architecture.md#5b-design-system).
 
 ---
 
@@ -105,7 +113,7 @@ source .venv/bin/activate
 pip install -r requirements-dev.txt
 python manage.py migrate
 python manage.py createsuperuser      # email + password (gets the owner role)
-python manage.py seed_demo            # optional: fictional demo menu, zones and hours
+python manage.py seed_demo            # optional: demo menu with photos, zones and hours
 python manage.py runserver            # http://127.0.0.1:8000
 ```
 
@@ -210,7 +218,7 @@ restoflow/
 
 1. ✅ **Foundation:** project structure, Django and React configuration, PostgreSQL, tooling, docs
 2. ✅ **Backend:** models and migrations, serializers, public and admin APIs, authentication, tests
-3. **Frontend:** design system, homepage, menu, product detail, i18n content
+3. ✅ **Frontend:** design system, homepage, menu, product detail, cart store, i18n content
 4. **Ordering:** cart, checkout, server-side price validation, order creation, WhatsApp hand-off
 5. **Admin:** login, dashboard, product, category, order and settings management
 6. **Quality:** full test pass, security hardening, performance, documentation

@@ -25,6 +25,9 @@ export const resources = {
 } as const
 
 function readStoredLanguage() {
+  // A ?lang= link (shared, or from search results) wins over the saved choice.
+  const fromUrl = new URLSearchParams(window.location.search).get('lang')
+  if (isSupportedLanguage(fromUrl)) return fromUrl
   try {
     const stored = window.localStorage.getItem(LANGUAGE_STORAGE_KEY)
     return isSupportedLanguage(stored) ? stored : DEFAULT_LANGUAGE

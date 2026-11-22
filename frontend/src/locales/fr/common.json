@@ -1,28 +1,124 @@
 {
   "brand": {
     "name": "RestoFlow",
-    "tagline": "Une cuisine généreuse, commandée en quelques gestes."
+    "tagline": "Cuisine généreuse, livrée à Casablanca"
   },
   "nav": {
     "home": "Accueil",
-    "mainNavigation": "Navigation principale"
+    "menu": "La carte",
+    "info": "Infos pratiques",
+    "mainNavigation": "Navigation principale",
+    "skipToContent": "Aller au contenu",
+    "cartLabel_one": "Panier, {{count}} article",
+    "cartLabel_other": "Panier, {{count}} articles",
+    "breadcrumb": "Fil d’Ariane"
   },
   "language": {
     "label": "Langue",
     "switchTo": "Passer en {{language}}"
   },
-  "home": {
-    "metaDescription": "Commandez vos plats préférés en ligne et finalisez votre commande sur WhatsApp.",
-    "foundationNotice": "Fondations techniques en place. La carte et la commande en ligne arrivent dans les prochaines phases."
-  },
-  "status": {
-    "title": "État du système",
-    "api": "API",
-    "database": "Base de données",
-    "checking": "Vérification…",
-    "ok": "Opérationnel",
+  "common": {
+    "retry": "Réessayer",
+    "loading": "Chargement…",
     "unavailable": "Indisponible",
-    "retry": "Réessayer"
+    "insteadOf": "au lieu de {{price}}",
+    "loadError": "Impossible de charger ces informations.",
+    "networkError": "Connexion impossible. Vérifiez votre réseau puis réessayez.",
+    "close": "Fermer"
+  },
+  "home": {
+    "metaDescription": "Burgers, tacos, pizzas et douceurs marocaines à Casablanca. Choisissez vos plats et envoyez votre commande sur WhatsApp.",
+    "heroTitle": "La table du quartier, livrée chez vous.",
+    "heroText": "Burgers, tacos, pizzas et douceurs marocaines, préparés à la commande. Composez votre panier, envoyez-le sur WhatsApp, on s’occupe du reste.",
+    "orderNow": "Commander",
+    "seeMenu": "Voir la carte",
+    "openNow": "Ouvert maintenant",
+    "closedNow": "Fermé pour le moment",
+    "closedToday": "Fermé aujourd’hui",
+    "notAcceptingOrders": "Les commandes en ligne sont suspendues pour le moment.",
+    "featuredTitle": "Les plats qu’on nous demande le plus",
+    "menuTitle": "La carte",
+    "menuText": "Tout est préparé à la commande.",
+    "dishCount_one": "{{count}} plat",
+    "dishCount_other": "{{count}} plats",
+    "stepsTitle": "Commander en trois étapes",
+    "step1Title": "Choisissez vos plats",
+    "step1Text": "Composez votre panier depuis la carte : format, suppléments et remarques pour la cuisine.",
+    "step2Title": "Envoyez-la sur WhatsApp",
+    "step2Text": "Nous préparons le message avec le total exact. Il ne vous reste qu’à appuyer sur Envoyer.",
+    "step3Title": "Le restaurant confirme",
+    "step3Text": "Nous vous répondons sur WhatsApp pour confirmer la commande et l’heure de livraison.",
+    "deliveryZones_one": "Livraison dans {{count}} quartier",
+    "deliveryZones_other": "Livraison dans {{count}} quartiers",
+    "freeDelivery": "Livraison offerte dès {{amount}}",
+    "minimumOrder": "Minimum {{amount}} en livraison",
+    "pickup": "À emporter, sans minimum",
+    "galleryTitle": "Dans l’assiette",
+    "infoTitle": "Infos pratiques",
+    "hoursTitle": "Horaires",
+    "contactTitle": "Nous trouver",
+    "closed": "Fermé",
+    "today": "Aujourd’hui",
+    "call": "Appeler",
+    "whatsapp": "Écrire sur WhatsApp",
+    "directions": "Voir l’itinéraire",
+    "socialTitle": "Suivez-nous"
+  },
+  "menu": {
+    "title": "La carte",
+    "metaDescription": "Toute la carte : burgers, tacos, pizzas, salades, desserts et boissons. Prix en dirhams, commande sur WhatsApp.",
+    "searchLabel": "Rechercher un plat",
+    "searchPlaceholder": "Burger, thé, salade…",
+    "clearSearch": "Effacer la recherche",
+    "allCategories": "Tout",
+    "categoriesLabel": "Rubriques de la carte",
+    "results_one": "{{count}} plat pour « {{query}} »",
+    "results_other": "{{count}} plats pour « {{query}} »",
+    "noResults": "Aucun plat ne correspond à « {{query}} ».",
+    "noResultsHint": "Essayez un autre mot ou parcourez les rubriques.",
+    "empty": "La carte est vide pour le moment.",
+    "add": "Ajouter",
+    "addLabel": "Ajouter {{name}} au panier",
+    "choose": "Choisir",
+    "chooseLabel": "Choisir les options de {{name}}",
+    "added": "{{name}} ajouté au panier",
+    "viewCart": "Voir le panier"
+  },
+  "product": {
+    "metaFallback": "{{name}} à commander en ligne, livraison ou à emporter.",
+    "variants": "Format",
+    "addons": "Suppléments",
+    "required": "obligatoire",
+    "optional": "facultatif",
+    "quantity": "Quantité",
+    "decrease": "Retirer une unité",
+    "increase": "Ajouter une unité",
+    "instructions": "Remarques pour la cuisine",
+    "instructionsPlaceholder": "Sans oignons, bien cuit…",
+    "charactersLeft_one": "{{count}} caractère restant",
+    "charactersLeft_other": "{{count}} caractères restants",
+    "total": "Total",
+    "addToCart": "Ajouter au panier",
+    "chooseVariant": "Choisissez un format pour continuer.",
+    "unavailable": "Ce plat n’est pas disponible pour le moment.",
+    "notFoundTitle": "Ce plat n’est plus à la carte",
+    "notFoundText": "Il a peut-être été retiré ou renommé. Le reste de la carte vous attend.",
+    "showPhoto": "Afficher la photo {{index}}",
+    "estimateNote": "Le total exact est confirmé avant l’envoi de la commande."
+  },
+  "cart": {
+    "title": "Votre panier",
+    "metaDescription": "Les plats que vous avez choisis.",
+    "empty": "Votre panier est vide.",
+    "emptyHint": "Parcourez la carte et ajoutez vos plats.",
+    "browse": "Voir la carte",
+    "remove": "Retirer {{name}}",
+    "quantityOf": "Quantité de {{name}}",
+    "subtotal": "Sous-total estimé",
+    "totalNote": "La livraison et le total exact sont calculés avant l’envoi de la commande.",
+    "continue": "Continuer mes achats",
+    "items_one": "{{count}} article",
+    "items_other": "{{count}} articles"
   },
   "notFound": {
     "title": "Page introuvable",
@@ -30,6 +126,7 @@
     "backHome": "Retour à l’accueil"
   },
   "footer": {
-    "rights": "© {{year}} {{name}}. Tous droits réservés."
+    "rights": "© {{year}} {{name}}",
+    "credits": "Photos de démonstration : Unsplash"
   }
 }

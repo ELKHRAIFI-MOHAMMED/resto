@@ -3,7 +3,7 @@
 This document describes how RestoFlow is put together and why. It is updated at
 the end of each development phase.
 
-> **Status:** Phase 2 (backend) complete. Sections marked *planned* describe
+> **Status:** Phase 3 (public frontend) complete. Sections marked *planned* describe
 > the agreed design for later phases and will be confirmed as they are built.
 
 ## 1. Overview
@@ -93,19 +93,35 @@ restoflow/
   - The OpenAPI 3 schema is at `/api/schema/` and Swagger UI at `/api/docs/`
     (drf-spectacular).
 - **Health check:** `GET /api/health/` reports API and database status
-  (200 / 503). Deployment probes and the Phase 1 home page use it.
+  (200 / 503), for deployment probes.
 
 ## 4. Frontend
 
 - **Tooling:** Vite, React 19, TypeScript in strict mode (plus
   `noUncheckedIndexedAccess`), Tailwind CSS v4 with design tokens declared in
   `src/index.css`, ESLint and Prettier.
-- **Routing:** React Router data router (`src/router.tsx`). Admin routes will be
-  code-split so public visitors never download dashboard code.
-- **Server state:** TanStack Query. Query functions live in `src/services`, and
-  hooks wrap them. Components never call `fetch`.
-- **Client state:** Zustand, for the cart only, persisted to `localStorage`
-  (Phase 4).
+- **Routing:** React Router data router (`src/router.tsx`): `/`, `/menu`
+  (`?category=` and `?q=` live in the URL, so a filtered menu can be shared),
+  `/menu/:slug`, `/cart`. Admin routes will be code-split so public visitors
+  never download dashboard code.
+- **Server state:** TanStack Query. Query functions live in
+  `src/services/catalog.ts` and hooks wrap them (`src/hooks/useCatalog.ts`).
+  Components never call `fetch`. Translated queries include the language in
+  their key, so switching language refetches the content in that language.
+- **Client state:** Zustand. The cart (`src/store/cart.ts`) is saved to
+  `localStorage` and survives reloads and language changes. A line is
+  identified by product, variant, add-ons and instructions; quantities are
+  clamped to the backend limits (1-50). Toasts live in `src/store/toast.ts`.
+- **Money:** API decimal strings are parsed into **integer centimes**
+  (`src/lib/money.ts`), so sums never drift. Prices shown while browsing are
+  estimates (`features/cart/pricing.ts`); the backend recomputes every total.
+- **Feature folders:** `features/home` (homepage sections), `features/menu`
+  (menu rows, category nav, grouping), `features/products` (options form),
+  `features/cart` (add-to-cart hook, estimates). Pages in `src/pages` only
+  assemble them.
+- **SEO:** each page sets its `<title>`, meta description and Open Graph tags
+  with React 19 document metadata. The homepage adds schema.org `Restaurant`
+  JSON-LD built from live API data (`src/lib/structuredData.ts`).
 - **API client** (`src/services/api.ts`): sends cookies, adds `X-CSRFToken` to
   unsafe requests, sends `Accept-Language`, and turns every failure into a typed
   `ApiError`.
@@ -121,11 +137,54 @@ restoflow/
 | Catalog content (products, categories, zones, …) | `*_fr` / `*_ar` / `*_en` columns; the API returns the `Accept-Language` value, falling back to French (`apps/core/i18n.py`) |
 | Direction | `<html dir>` and `<html lang>` follow the active language (`ar` → `rtl`) |
 | Layout mirroring | Tailwind logical utilities (`ps-*`, `ms-*`, `text-start`, `start-*`) instead of left/right |
-| Persistence | `localStorage` key `restoflow.language`; French is the default |
+| Persistence | `localStorage` key `restoflow.language`; French is the default. A `?lang=ar` link overrides the saved choice |
+| Plurals | i18next plural keys; Arabic defines all six forms (`_zero` to `_other`) |
+| Numbers and dates | Latin digits in every language; weekday names and number formats from `Intl` |
+| Bidirectional text | prices wrapped in `<bdi>`; time ranges and phone numbers forced `dir="ltr"` inside Arabic text |
 
 Arabic is a real right-to-left layout: the document direction flips, and so do
 spacing, alignment and icon placement. It is not just right-aligned text. A
 test makes sure every language has the same translation keys.
+
+## 5b. Design system
+
+The visual identity is anchored in Casablanca's Art Deco architecture and
+Moroccan craft, on the palette fixed by the brief.
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `background` | `#111111` | page |
+| `surface` / `surface-raised` | `#1C1C1C` / `#252321` | bands, inputs, toasts |
+| `border` | `#2E2B28` | hairlines, dividers |
+| `accent` | `#C89B5C` | prices, primary actions, active states only |
+| `foreground` / `muted` | `#F8F5EF` / `#A8A29E` | text (both pass WCAG AA on the background) |
+
+Typography (self-hosted with Fontsource, split into Unicode subsets so a
+visitor only downloads the scripts they see):
+
+| Role | Latin | Arabic |
+| --- | --- | --- |
+| Display | Italiana, a high-contrast Deco face | Reem Kufi, geometric Kufi |
+| Text and UI | Jost, a Futura revival (1927) | Noto Naskh Arabic |
+
+The browser falls back per character: an Arabic dish name inside a Latin
+heading renders in Reem Kufi automatically. Sizes follow Bringhurst's classic
+scale (14, 16, 18, 21, 24, 36, 48, 60, 72); Arabic gets a slightly larger base
+size and line height.
+
+Signature elements, used sparingly:
+
+- **The arch.** A tall Moroccan window with a brass outline frames food
+  photography, on the hero and the product page only (`components/ArchImage.tsx`).
+- **The printed menu.** Dish rows and the category board use dotted leaders
+  between name and price.
+- **The zellige star.** An eight-point star is the placeholder for dishes
+  without a photo.
+
+Motion: one page-load reveal of the hero arch, plus feedback to user actions
+(toasts, hover states). `prefers-reduced-motion` disables animations.
+Accessibility: a skip link, visible focus, landmarks, labelled controls,
+`aria-live` for toasts and search results, and 44 px minimum touch targets.
 
 ## 6. Ordering and WhatsApp flow *(backend done; UI in Phase 4)*
 
@@ -190,3 +249,6 @@ Rules:
 | 15 | Public endpoints skip authentication; admin endpoints use sessions | Public calls need no CSRF token; admin calls are always CSRF-checked, and login is wrapped in `csrf_protect` |
 | 16 | WhatsApp templates are per-language dictionaries in code, and API errors expose stable `code`s for the frontend to translate (no gettext catalogues) | No gettext toolchain to install; each wording lives in one place |
 | 17 | `is_active` (hidden) is separate from `is_available` (shown as unavailable) | Matches how restaurants work: a dish can be sold out today and still appear on the menu |
+| 18 | Native form controls styled with Tailwind; shadcn/ui not added for the public site | The public pages need few widgets; semantic HTML keeps the bundle small and accessible. shadcn/ui will be considered for the admin dashboard |
+| 19 | The whole menu is fetched once (following pagination); category filtering happens on the client, search goes to the API | Switching categories is instant, and search stays multilingual (names and descriptions in all three languages) |
+| 20 | Demo photos are Unsplash stock photos stored in `backend/demo/images` and attached by `seed_demo`; dishes without a matching photo keep the placeholder | A realistic demo without passing off unrelated photos as dishes |

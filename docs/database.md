@@ -142,6 +142,7 @@ never share a number.
 ## Demo data
 
 `python manage.py seed_demo` loads **fictional demo content**: 6 categories,
-14 products with variants and add-ons, 6 Casablanca delivery zones, and
-opening hours. It is idempotent and refuses to run when `DEBUG` is off
+14 products with variants, add-ons and descriptions in all three languages,
+6 Casablanca delivery zones, opening hours, and Unsplash stock photos from
+`backend/demo/images` (credits in `CREDITS.md`; skip them with `--no-images`). It is idempotent and refuses to run when `DEBUG` is off
 (unless `--force`). The WhatsApp number is a placeholder (`212600000000`).

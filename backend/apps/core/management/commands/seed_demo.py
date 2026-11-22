@@ -1,26 +1,30 @@
 """
 Load DEMO content for local development: a sample restaurant profile, menu,
-add-ons, delivery zones and opening hours.
+add-ons, delivery zones, opening hours and stock photos.
 
 Everything created here is fictional demo data. The WhatsApp number is a
-placeholder and must be replaced in the settings before real use.
+placeholder and must be replaced in the settings before real use. Photos come
+from Unsplash (see backend/demo/images/CREDITS.md).
 """
 
 from datetime import time
 from decimal import Decimal
+from pathlib import Path
 
 from django.conf import settings
+from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.categories.models import Category
 from apps.delivery.models import DeliveryZone
-from apps.products.models import Addon, Product, ProductVariant
+from apps.products.models import Addon, Product, ProductImage, ProductVariant
 from apps.restaurant.models import OpeningHour, Restaurant
 
 D = Decimal
 
 DEMO_WHATSAPP_NUMBER = "212600000000"  # placeholder, not a real line
+DEMO_IMAGES_DIR = Path(settings.BASE_DIR) / "demo" / "images"
 
 RESTAURANT = {
     "name": "RestoFlow",
@@ -42,6 +46,7 @@ RESTAURANT = {
     "whatsapp_number": DEMO_WHATSAPP_NUMBER,
     "email": "contact@restoflow.example",
     "instagram_url": "https://www.instagram.com/",
+    "google_maps_url": "https://maps.google.com/?q=Boulevard+d%27Anfa+Casablanca",
     "minimum_order_amount": D("60.00"),
     "free_delivery_threshold": D("300.00"),
 }
@@ -55,71 +60,161 @@ ADDONS = {
     "fries": ("Frites maison", "بطاطس مقلية منزلية", "Homemade fries", D("15.00")),
 }
 
-# slug: (fr, ar, en, description_fr, order)
+# slug: ((name fr, ar, en), (description fr, ar, en), display order)
 CATEGORIES = {
-    "burgers": ("Burgers", "برغر", "Burgers", "Pains briochés, viande hachée du jour.", 1),
-    "tacos": ("Tacos", "تاكوس", "Tacos", "Le tacos à la française, généreux et gratiné.", 2),
-    "pizzas": ("Pizzas", "بيتزا", "Pizzas", "Pâte maturée 48 h, cuisson au four.", 3),
-    "salades": ("Salades", "سلطات", "Salads", "Fraîches et de saison.", 4),
-    "desserts": ("Desserts", "حلويات", "Desserts", "Faits maison chaque jour.", 5),
-    "boissons": ("Boissons", "مشروبات", "Drinks", "Fraîches, chaudes et jus pressés.", 6),
+    "burgers": (
+        ("Burgers", "برغر", "Burgers"),
+        (
+            "Pains briochés et viande hachée chaque matin.",
+            "خبز بريوش ولحم مفروم طازج كل صباح.",
+            "Brioche buns and beef minced fresh every morning.",
+        ),
+        1,
+    ),
+    "tacos": (
+        ("Tacos", "تاكوس", "Tacos"),
+        (
+            "Le tacos à la française, généreux et gratiné.",
+            "التاكوس على الطريقة الفرنسية، سخي ومحمّر بالجبن.",
+            "French-style tacos, generous and grilled with cheese.",
+        ),
+        2,
+    ),
+    "pizzas": (
+        ("Pizzas", "بيتزا", "Pizzas"),
+        (
+            "Pâte maturée 48 h, cuisson au four.",
+            "عجينة مخمّرة 48 ساعة، مطهوة في الفرن.",
+            "48-hour dough, baked in the oven.",
+        ),
+        3,
+    ),
+    "salades": (
+        ("Salades", "سلطات", "Salads"),
+        ("Fraîches et de saison.", "طازجة وموسمية.", "Fresh and seasonal."),
+        4,
+    ),
+    "desserts": (
+        ("Desserts", "حلويات", "Desserts"),
+        ("Faits maison chaque jour.", "محضّرة في المطبخ كل يوم.", "Made in house every day."),
+        5,
+    ),
+    "boissons": (
+        ("Boissons", "مشروبات", "Drinks"),
+        (
+            "Fraîches, chaudes et jus pressés.",
+            "مشروبات باردة وساخنة وعصائر طبيعية.",
+            "Cold drinks, hot drinks and fresh juices.",
+        ),
+        6,
+    ),
 }
 
 SIZES_PIZZA = [("Moyenne", "متوسطة", "Medium", D("0")), ("Grande", "كبيرة", "Large", D("25"))]
 SIZES_TACOS = [("M", "M", "M", D("0")), ("L", "L", "L", D("15")), ("XL", "XL", "XL", D("30"))]
 SIZES_DRINK = [("33 cl", "33 cl", "33 cl", D("0")), ("1 L", "1 L", "1 L", D("10"))]
 
-# category: [(fr, ar, en, description_fr, price, sale_price, featured, variants, addons)]
+
+def product(names, descriptions, price, *, sale=None, featured=False, variants=(), addons=(),
+            images=()):  # fmt: skip
+    return {
+        "names": names,
+        "descriptions": descriptions,
+        "price": D(price),
+        "sale": D(sale) if sale else None,
+        "featured": featured,
+        "variants": list(variants),
+        "addons": list(addons),
+        "images": list(images),
+    }
+
+
+# Images live in backend/demo/images. The first is the main image, the
+# others go to the product gallery. Products without a matching photo keep
+# none: the site shows its designed placeholder instead of a misleading photo.
 # fmt: off
 PRODUCTS = {
     "burgers": [
-        ("Classic Burger", "برغر كلاسيك", "Classic Burger",
-         "Bœuf 150 g, cheddar, salade, tomate, oignons rouges, sauce maison.",
-         D("55"), None, True, [], ["cheese", "bacon", "egg", "fries"]),
-        ("Double Cheese Burger", "دبل تشيز برغر", "Double Cheese Burger",
-         "Deux steaks 120 g, double cheddar fondu, pickles, sauce burger.",
-         D("75"), D("65"), True, [], ["cheese", "bacon", "egg", "fries"]),
-        ("Chicken Crispy", "دجاج مقرمش", "Crispy Chicken",
-         "Filet de poulet pané, coleslaw, sauce miel-moutarde.",
-         D("58"), None, False, [], ["cheese", "fries"]),
+        product(("Classic Burger", "برغر كلاسيك", "Classic Burger"),
+                ("Bœuf 150 g, cheddar, salade, tomate, oignons rouges, sauce maison.",
+                 "لحم بقر 150 غ، جبن شيدر، خس، طماطم، بصل أحمر، صلصة المنزل.",
+                 "150 g beef, cheddar, lettuce, tomato, red onion, house sauce."),
+                "55", addons=["cheese", "bacon", "egg", "fries"], images=["classic-burger"]),
+        product(("Double Cheese Burger", "دبل تشيز برغر", "Double Cheese Burger"),
+                ("Deux steaks 120 g, double cheddar fondu, pickles, sauce burger.",
+                 "قطعتا لحم 120 غ، شيدر مزدوج ذائب، مخلل، صلصة البرغر.",
+                 "Two 120 g patties, double melted cheddar, pickles, burger sauce."),
+                "75", sale="65", featured=True, addons=["cheese", "bacon", "egg", "fries"],
+                images=["double-cheese-burger"]),
+        product(("Chicken Crispy", "دجاج مقرمش", "Crispy Chicken"),
+                ("Filet de poulet pané, chou rouge, sauce miel-moutarde.",
+                 "فيليه دجاج مقرمش، ملفوف أحمر، صلصة العسل والخردل.",
+                 "Breaded chicken fillet, red cabbage, honey-mustard sauce."),
+                "58", addons=["cheese", "fries"], images=["chicken-crispy"]),
     ],
     "tacos": [
-        ("Tacos Poulet", "تاكوس دجاج", "Chicken Tacos",
-         "Poulet mariné, frites, sauce fromagère gratinée.",
-         D("45"), None, True, SIZES_TACOS, ["cheese", "harissa", "algerian"]),
-        ("Tacos Viande hachée", "تاكوس لحم مفروم", "Minced Beef Tacos",
-         "Viande hachée épicée, frites, sauce fromagère.",
-         D("50"), None, False, SIZES_TACOS, ["cheese", "harissa", "algerian"]),
+        product(("Tacos Poulet", "تاكوس دجاج", "Chicken Tacos"),
+                ("Poulet mariné, frites, sauce fromagère gratinée.",
+                 "دجاج متبّل، بطاطس مقلية، صلصة الجبن المحمّرة.",
+                 "Marinated chicken, fries, grilled cheese sauce."),
+                "45", featured=True, variants=SIZES_TACOS,
+                addons=["cheese", "harissa", "algerian"], images=["tacos-poulet"]),
+        product(("Tacos Viande hachée", "تاكوس لحم مفروم", "Minced Beef Tacos"),
+                ("Viande hachée épicée, frites, sauce fromagère.",
+                 "لحم مفروم متبّل، بطاطس مقلية، صلصة الجبن.",
+                 "Spiced minced beef, fries, cheese sauce."),
+                "50", variants=SIZES_TACOS, addons=["cheese", "harissa", "algerian"]),
     ],
     "pizzas": [
-        ("Pizza Margherita", "بيتزا مارغريتا", "Margherita Pizza",
-         "Sauce tomate, mozzarella fior di latte, basilic frais.",
-         D("60"), None, False, SIZES_PIZZA, ["cheese"]),
-        ("Pizza Fruits de mer", "بيتزا فواكه البحر", "Seafood Pizza",
-         "Crevettes, calamars, moules, ail et persil.",
-         D("90"), None, True, SIZES_PIZZA, ["cheese"]),
+        product(("Pizza Margherita", "بيتزا مارغريتا", "Margherita Pizza"),
+                ("Sauce tomate, mozzarella fior di latte, basilic frais.",
+                 "صلصة الطماطم، موزاريلا فيور دي لاتي، ريحان طازج.",
+                 "Tomato sauce, fior di latte mozzarella, fresh basil."),
+                "60", featured=True, variants=SIZES_PIZZA, addons=["cheese"],
+                images=["pizza-margherita"]),
+        product(("Pizza Fruits de mer", "بيتزا فواكه البحر", "Seafood Pizza"),
+                ("Crevettes, calamars, moules, ail et persil.",
+                 "قمرون، كلمار، بلح البحر، ثوم وبقدونس.",
+                 "Shrimp, squid, mussels, garlic and parsley."),
+                "90", variants=SIZES_PIZZA, addons=["cheese"]),
     ],
     "salades": [
-        ("Salade César", "سلطة سيزر", "Caesar Salad",
-         "Romaine, poulet grillé, parmesan, croûtons, sauce César.",
-         D("52"), None, False, [], ["egg"]),
-        ("Salade marocaine", "سلطة مغربية", "Moroccan Salad",
-         "Tomates, concombres, oignons, coriandre, huile d'olive.",
-         D("30"), None, False, [], []),
+        product(("Salade César", "سلطة سيزر", "Caesar Salad"),
+                ("Romaine, poulet grillé, parmesan, croûtons, sauce César.",
+                 "خس روماني، دجاج مشوي، بارميزان، خبز محمّص، صلصة سيزر.",
+                 "Romaine, grilled chicken, parmesan, croutons, Caesar dressing."),
+                "52", addons=["egg"], images=["salade-cesar"]),
+        product(("Salade marocaine", "سلطة مغربية", "Moroccan Salad"),
+                ("Tomates, concombres, oignons, coriandre, huile d'olive.",
+                 "طماطم، خيار، بصل، قزبر، زيت الزيتون.",
+                 "Tomatoes, cucumber, onion, coriander, olive oil."),
+                "30"),
     ],
     "desserts": [
-        ("Tiramisu maison", "تيراميسو منزلي", "Homemade Tiramisu",
-         "Mascarpone, café, cacao.", D("35"), None, False, [], []),
-        ("Pastilla au lait", "بسطيلة بالحليب", "Milk Pastilla",
-         "Feuilles croustillantes, crème à la fleur d'oranger, amandes.",
-         D("32"), None, True, [], []),
+        product(("Tiramisu maison", "تيراميسو منزلي", "Homemade Tiramisu"),
+                ("Mascarpone, café, cacao.", "ماسكاربوني، قهوة، كاكاو.",
+                 "Mascarpone, coffee, cocoa."),
+                "35", images=["tiramisu", "tiramisu-2"]),
+        product(("Pâtisseries marocaines", "حلويات مغربية", "Moroccan Pastries"),
+                ("Assortiment du jour aux amandes et au miel, servi avec du thé.",
+                 "تشكيلة اليوم باللوز والعسل، تقدّم مع الشاي.",
+                 "Today's selection with almonds and honey, served with tea."),
+                "32", featured=True,
+                images=["patisseries-marocaines", "patisseries-marocaines-2"]),
     ],
     "boissons": [
-        ("Coca-Cola", "كوكا كولا", "Coca-Cola", "", D("10"), None, False, SIZES_DRINK, []),
-        ("Jus d'orange pressé", "عصير برتقال طبيعي", "Fresh Orange Juice",
-         "Oranges pressées à la commande.", D("20"), None, False, [], []),
-        ("Thé à la menthe", "أتاي بالنعناع", "Mint Tea",
-         "Thé vert, menthe fraîche.", D("15"), None, False, [], []),
+        product(("Coca-Cola", "كوكا كولا", "Coca-Cola"),
+                ("Bien frais, avec glaçons.", "بارد مع مكعبات الثلج.", "Ice cold, with ice."),
+                "10", variants=SIZES_DRINK, images=["coca-cola"]),
+        product(("Jus d'orange pressé", "عصير برتقال طبيعي", "Fresh Orange Juice"),
+                ("Oranges pressées à la commande.", "برتقال يُعصر عند الطلب.",
+                 "Oranges squeezed to order."),
+                "20", images=["jus-orange"]),
+        product(("Thé à la menthe", "أتاي بالنعناع", "Mint Tea"),
+                ("Thé vert, menthe fraîche, servi à la marocaine.",
+                 "شاي أخضر بالنعناع الطازج، على الطريقة المغربية.",
+                 "Green tea and fresh mint, served the Moroccan way."),
+                "15", images=["the-menthe", "the-menthe-2"]),
     ],
 }
 # fmt: on
@@ -148,9 +243,12 @@ class Command(BaseCommand):
             action="store_true",
             help="Allow running when DEBUG is off. Never use on a real restaurant's data.",
         )
+        parser.add_argument(
+            "--no-images", action="store_true", help="Do not attach the demo photos."
+        )
 
     @transaction.atomic
-    def handle(self, *args, force: bool = False, **options):
+    def handle(self, *args, force: bool = False, no_images: bool = False, **options):
         if not settings.DEBUG and not force:
             raise CommandError("Refusing to load demo data with DEBUG off (use --force).")
 
@@ -179,47 +277,22 @@ class Command(BaseCommand):
             )
 
         product_count = 0
-        for slug, (fr, ar, en, description, order) in CATEGORIES.items():
+        for slug, ((fr, ar, en), (d_fr, d_ar, d_en), order) in CATEGORIES.items():
             category, _ = Category.objects.update_or_create(
                 slug=slug,
                 defaults={
                     "name_fr": fr,
                     "name_ar": ar,
                     "name_en": en,
-                    "description_fr": description,
+                    "description_fr": d_fr,
+                    "description_ar": d_ar,
+                    "description_en": d_en,
                     "display_order": order,
                     "is_active": True,
                 },
             )
-            for position, row in enumerate(PRODUCTS[slug]):
-                p_fr, p_ar, p_en, p_desc, price, sale, featured, variants, addon_keys = row
-                product, _ = Product.objects.update_or_create(
-                    category=category,
-                    name_fr=p_fr,
-                    defaults={
-                        "name_ar": p_ar,
-                        "name_en": p_en,
-                        "description_fr": p_desc,
-                        "price": price,
-                        "sale_price": sale,
-                        "is_featured": featured,
-                        "is_active": True,
-                        "is_available": True,
-                        "display_order": position,
-                    },
-                )
-                product.addons.set([addons[key] for key in addon_keys])
-                for v_order, (v_fr, v_ar, v_en, delta) in enumerate(variants):
-                    ProductVariant.objects.update_or_create(
-                        product=product,
-                        name_fr=v_fr,
-                        defaults={
-                            "name_ar": v_ar,
-                            "name_en": v_en,
-                            "price_delta": delta,
-                            "display_order": v_order,
-                        },
-                    )
+            for position, data in enumerate(PRODUCTS[slug]):
+                self._upsert_product(category, position, data, addons, with_images=not no_images)
                 product_count += 1
 
         for order, (fr, ar, en, fee, minimum) in enumerate(ZONES):
@@ -247,3 +320,51 @@ class Command(BaseCommand):
                 "set the real number in the admin settings."
             )
         )
+
+    def _upsert_product(self, category, position, data, addons, *, with_images: bool) -> None:
+        (fr, ar, en), (d_fr, d_ar, d_en) = data["names"], data["descriptions"]
+        item, _ = Product.objects.update_or_create(
+            category=category,
+            name_fr=fr,
+            defaults={
+                "name_ar": ar,
+                "name_en": en,
+                "description_fr": d_fr,
+                "description_ar": d_ar,
+                "description_en": d_en,
+                "price": data["price"],
+                "sale_price": data["sale"],
+                "is_featured": data["featured"],
+                "is_active": True,
+                "is_available": True,
+                "display_order": position,
+            },
+        )
+        item.addons.set([addons[key] for key in data["addons"]])
+        for order, (v_fr, v_ar, v_en, delta) in enumerate(data["variants"]):
+            ProductVariant.objects.update_or_create(
+                product=item,
+                name_fr=v_fr,
+                defaults={
+                    "name_ar": v_ar,
+                    "name_en": v_en,
+                    "price_delta": delta,
+                    "display_order": order,
+                },
+            )
+        if with_images:
+            self._attach_images(item, data["images"])
+
+    @staticmethod
+    def _attach_images(product: Product, names: list[str]) -> None:
+        """Main image + gallery, only when the product has none yet (keeps reruns cheap)."""
+        if not names:
+            return
+        if not product.image:
+            with (DEMO_IMAGES_DIR / f"{names[0]}.webp").open("rb") as handle:
+                product.image.save(f"{names[0]}.webp", File(handle), save=True)
+        if not product.images.exists():
+            for position, name in enumerate(names[1:], start=1):
+                with (DEMO_IMAGES_DIR / f"{name}.webp").open("rb") as handle:
+                    gallery = ProductImage(product=product, display_order=position)
+                    gallery.image.save(f"{name}.webp", File(handle), save=True)
