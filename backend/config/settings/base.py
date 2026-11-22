@@ -142,7 +142,12 @@ TIME_ZONE = "Africa/Casablanca"
 USE_I18N = True
 USE_TZ = True
 
-RESTAURANT_CURRENCY = "MAD"
+# ---------------------------------------------------------------------------
+# Ordering
+# ---------------------------------------------------------------------------
+ORDER_REFERENCE_PREFIX = env.str("ORDER_REFERENCE_PREFIX", default="RF")
+ORDER_MAX_LINES = 50  # distinct cart lines per order
+ORDER_MAX_ITEM_QUANTITY = 50  # units per cart line
 
 # ---------------------------------------------------------------------------
 # Static & media files

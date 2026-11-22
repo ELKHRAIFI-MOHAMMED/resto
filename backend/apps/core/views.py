@@ -7,15 +7,31 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .permissions import IsStaff
+
 logger = logging.getLogger(__name__)
 
 
-class HealthView(APIView):
+class PublicAPIMixin:
+    """
+    Public, unauthenticated endpoint. Skipping authentication also means no
+    session CSRF check, which public endpoints do not need.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+
+class StaffAPIMixin:
+    """Back-office endpoint: active staff users only."""
+
+    permission_classes = [IsStaff]
+
+
+class HealthView(PublicAPIMixin, APIView):
     """Liveness/readiness probe: reports whether the API can reach the database."""
 
-    permission_classes = [AllowAny]
-    authentication_classes = []
-    throttle_classes = []
+    throttle_classes: list = []
 
     @extend_schema(
         summary="Service health",

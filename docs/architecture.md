@@ -3,7 +3,7 @@
 This document describes how RestoFlow is put together and why. It is updated at
 the end of each development phase.
 
-> **Status:** Phase 1 (foundation) complete. Sections marked *planned* describe
+> **Status:** Phase 2 (backend) complete. Sections marked *planned* describe
 > the agreed design for later phases and will be confirmed as they are built.
 
 ## 1. Overview
@@ -66,7 +66,7 @@ restoflow/
 | Layer | Owns | Must not |
 | --- | --- | --- |
 | Django models | data integrity, constraints | depend on HTTP |
-| Django services (`apps/*/services.py`, planned) | business rules: pricing, order creation, WhatsApp message | live in views or serializers |
+| Django services (`orders/pricing.py`, `orders/services.py`, `orders/whatsapp.py`, `orders/dashboard.py`, `restaurant/services.py`) | business rules: pricing, order creation, status workflow, WhatsApp message, statistics | depend on DRF or HTTP |
 | DRF serializers / views | input validation, HTTP, permissions | contain pricing logic |
 | `frontend/src/services` | HTTP calls, error normalisation | touch the DOM |
 | `frontend/src/features` | feature state and hooks | duplicate backend rules as authority |
@@ -118,7 +118,7 @@ restoflow/
 | Concern | Mechanism |
 | --- | --- |
 | UI strings | i18next dictionaries in `src/locales/{fr,ar,en}/common.json`; keys are type-checked against French |
-| Catalog content (products, categories, …) | stored per language in the database (planned, Phase 2) and returned in the requested language |
+| Catalog content (products, categories, zones, …) | `*_fr` / `*_ar` / `*_en` columns; the API returns the `Accept-Language` value, falling back to French (`apps/core/i18n.py`) |
 | Direction | `<html dir>` and `<html lang>` follow the active language (`ar` → `rtl`) |
 | Layout mirroring | Tailwind logical utilities (`ps-*`, `ms-*`, `text-start`, `start-*`) instead of left/right |
 | Persistence | `localStorage` key `restoflow.language`; French is the default |
@@ -127,7 +127,7 @@ Arabic is a real right-to-left layout: the document direction flips, and so do
 spacing, alignment and icon placement. It is not just right-aligned text. A
 test makes sure every language has the same translation keys.
 
-## 6. Ordering and WhatsApp flow *(planned, Phase 4)*
+## 6. Ordering and WhatsApp flow *(backend done; UI in Phase 4)*
 
 ```
 Customer        React SPA                      Django API                    PostgreSQL
@@ -158,7 +158,16 @@ Rules:
   can move an order to *confirmed* and beyond. Nothing is confirmed
   automatically.
 - The WhatsApp message is built server-side in the customer's language, so the
-  wording lives in exactly one place.
+  wording lives in exactly one place (`apps/orders/whatsapp.py`). Customer text
+  is flattened to a single line, so it cannot fake extra message lines.
+- `POST /api/orders/quote/` runs the same pricing without saving anything. The
+  cart and checkout show authoritative totals and per-item errors without
+  copying any pricing rule into the frontend.
+- Reference numbers (`RF-<year>-<seq>`) come from a per-year counter row
+  locked inside the order transaction.
+- Staff move orders through a type-aware workflow
+  (`pending → confirmed → preparing → ready | out_for_delivery → completed`,
+  or `cancelled`). Invalid transitions return 409.
 
 ## 7. Key decisions
 
@@ -174,5 +183,10 @@ Rules:
 | 8 | PostgreSQL in Docker, apps run natively | Fast reloads, with production parity for the database |
 | 9 | `DecimalField` and `Decimal` end to end; the API serialises money as strings | No floating-point rounding errors on prices |
 | 10 | Order lines store name and price **snapshots** | Editing or deleting a product never rewrites past orders |
-| 11 | Per-language columns for catalog translations (`name_fr`, `name_ar`, `name_en`) *(proposed for Phase 2)* | Three fixed languages: plain SQL, indexable, no extra dependency |
+| 11 | Per-language columns for catalog translations (`name_fr`, `name_ar`, `name_en`), French required, others fall back | Three fixed languages: plain SQL, searchable in every language, no extra dependency |
 | 12 | Scoped rate limits for order creation and login | Basic abuse protection on the public endpoints |
+| 13 | Services raise a framework-agnostic `BusinessRuleError`, converted to the error envelope in one place | Business rules stay testable without HTTP, and error codes stay consistent |
+| 14 | Business-invariant `CHECK` constraints (totals, sale price, quantities, singleton) | Integrity holds even for writes that bypass Django validation |
+| 15 | Public endpoints skip authentication; admin endpoints use sessions | Public calls need no CSRF token; admin calls are always CSRF-checked, and login is wrapped in `csrf_protect` |
+| 16 | WhatsApp templates are per-language dictionaries in code, and API errors expose stable `code`s for the frontend to translate (no gettext catalogues) | No gettext toolchain to install; each wording lives in one place |
+| 17 | `is_active` (hidden) is separate from `is_available` (shown as unavailable) | Matches how restaurants work: a dish can be sold out today and still appear on the menu |

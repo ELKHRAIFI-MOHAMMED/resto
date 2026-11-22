@@ -18,3 +18,7 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="restoflow-test-media-"))
 
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+# Throttling stores its counters in the cache. A dummy cache keeps rate limits
+# from leaking between tests; throttle tests switch to a real cache explicitly.
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}}

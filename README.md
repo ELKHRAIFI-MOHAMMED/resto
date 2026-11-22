@@ -9,9 +9,10 @@ zones, settings and orders from a private dashboard.
 Prices are in Moroccan dirhams (MAD). There is no online payment: orders are
 paid on delivery or pickup.
 
-> **Project status: Phase 1 (foundation) complete.** The backend, frontend,
-> database, tooling and documentation are in place. The features below are
-> built phase by phase (see [Roadmap](#roadmap)).
+> **Project status: Phase 2 (backend) complete.** The Django REST API is
+> functional and tested: catalog, pricing, order creation with WhatsApp
+> hand-off, admin authentication and management endpoints. The user interface
+> is built in the next phases (see [Roadmap](#roadmap)).
 
 ---
 
@@ -19,12 +20,12 @@ paid on delivery or pickup.
 
 | Area | Highlights | Status |
 | --- | --- | --- |
-| Public site | Homepage, menu with category filters and search, product detail with variants and add-ons | Phase 3 |
-| Ordering | Persistent cart, checkout with validation, server-side price recalculation, WhatsApp hand-off | Phase 4 |
-| Administration | Dashboard stats, product/category/order management, delivery zones, restaurant settings | Phase 5 |
-| Multilingual | French (default), Arabic with full RTL layout, English | Foundation ✅ — content in Phase 2–3 |
-| API | REST, OpenAPI/Swagger docs, pagination, filtering, consistent errors | Foundation ✅ |
-| Security | Session auth + CSRF, deny-by-default permissions, rate limiting, upload validation | Foundation ✅ — completed through Phase 6 |
+| Public site | Homepage, menu with category filters and search, product detail with variants and add-ons | API ✅ · UI in Phase 3 |
+| Ordering | Server-side pricing and quotes, delivery zones, fees and minimums, order snapshots, WhatsApp message | API ✅ · cart and checkout UI in Phase 4 |
+| Administration | Dashboard stats, product/category/order management, delivery zones, restaurant settings, manual status workflow | API ✅ · UI in Phase 5 |
+| Multilingual | French (default), Arabic with full RTL layout, English; translated catalog content | ✅ |
+| API | REST, OpenAPI/Swagger docs, pagination, filtering, search, consistent error codes | ✅ |
+| Security | Session auth + CSRF, deny-by-default permissions, owner/manager roles, rate limiting, upload validation, DB constraints | ✅ · reviewed again in Phase 6 |
 
 ## Tech stack
 
@@ -103,7 +104,8 @@ source .venv/bin/activate
 
 pip install -r requirements-dev.txt
 python manage.py migrate
-python manage.py createsuperuser      # email + password
+python manage.py createsuperuser      # email + password (gets the owner role)
+python manage.py seed_demo            # optional: fictional demo menu, zones and hours
 python manage.py runserver            # http://127.0.0.1:8000
 ```
 
@@ -156,6 +158,9 @@ All variables live in the root `.env` (template: [.env.example](.env.example)).
 | `DJANGO_ADMIN_URL` | Django | Path of the built-in Django admin (default `django-admin/`) |
 | `CORS_ALLOWED_ORIGINS` / `CSRF_TRUSTED_ORIGINS` | Django | Allowed frontend origins when not same-origin |
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` | Django, Docker | Database connection |
+| `ORDER_REFERENCE_PREFIX` | Django | Prefix of order references (default `RF`, e.g. `RF-2026-0001`) |
+| `THROTTLE_ANON`, `THROTTLE_ORDERS`, `THROTTLE_LOGIN` | Django | Rate limits (defaults `120/minute`, `10/minute`, `5/minute`) |
+| `MAX_IMAGE_UPLOAD_SIZE` | Django | Maximum upload size in bytes (default 5 MB) |
 | `DATABASE_URL` | Django | Optional; overrides the `POSTGRES_*` values |
 | `VITE_API_BASE_URL` | Frontend | API base path or URL (default `/api`) |
 | `VITE_DEV_API_PROXY_TARGET` | Vite dev server | Django address for the dev proxy |
@@ -197,14 +202,14 @@ restoflow/
 ## Documentation
 
 - [Architecture](docs/architecture.md): components, data flow, key decisions
-- Database schema (`docs/database.md`): Phase 2
-- API reference (`docs/api.md`): Phase 2; meanwhile see Swagger UI at `/api/docs/`
+- [Database](docs/database.md): schema, relationships, constraints, demo data
+- [API reference](docs/api.md): conventions, error codes, order flow, admin endpoints (interactive docs at `/api/docs/`)
 - Deployment guide (`docs/deployment.md`): Phase 7
 
 ## Roadmap
 
 1. ✅ **Foundation:** project structure, Django and React configuration, PostgreSQL, tooling, docs
-2. **Backend:** models and migrations, serializers, public and admin APIs, authentication, tests
+2. ✅ **Backend:** models and migrations, serializers, public and admin APIs, authentication, tests
 3. **Frontend:** design system, homepage, menu, product detail, i18n content
 4. **Ordering:** cart, checkout, server-side price validation, order creation, WhatsApp hand-off
 5. **Admin:** login, dashboard, product, category, order and settings management

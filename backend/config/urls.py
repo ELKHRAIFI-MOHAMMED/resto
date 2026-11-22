@@ -2,7 +2,9 @@
 Root URL configuration.
 
 Layout:
-    /api/...            REST API (public + /api/admin/ endpoints, added in Phase 2)
+    /api/...            public REST API (catalog, restaurant, delivery, orders)
+    /api/auth/...       admin session authentication
+    /api/admin/...      back-office API (staff only), see config/admin_api.py
     /api/schema/        OpenAPI 3 schema
     /api/docs/          Swagger UI
     /<DJANGO_ADMIN_URL> Django's built-in admin (kept off /admin/, which belongs
@@ -17,6 +19,13 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 api_patterns = [
     path("", include("apps.core.urls")),
+    path("auth/", include("apps.accounts.urls")),
+    path("restaurant/", include("apps.restaurant.urls")),
+    path("categories/", include("apps.categories.urls")),
+    path("products/", include("apps.products.urls")),
+    path("delivery/", include("apps.delivery.urls")),
+    path("orders/", include("apps.orders.urls")),
+    path("admin/", include("config.admin_api")),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
 ]
