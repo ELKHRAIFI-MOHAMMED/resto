@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render } from '@testing-library/react'
+import { render, waitFor } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router'
-import { vi } from 'vitest'
+import { expect, vi } from 'vitest'
 
 export function renderWithProviders(ui: ReactElement) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -13,6 +13,15 @@ export function renderRoutes(routes: RouteObject[], initialPath = '/') {
   const router = createMemoryRouter(routes, { initialEntries: [initialPath] })
   const view = renderWithProviders(<RouterProvider router={router} />)
   return { ...view, router }
+}
+
+/** Like renderRoutes, but waits for lazy route modules to load first. */
+export async function renderRoutesReady(routes: RouteObject[], initialPath = '/') {
+  const view = renderRoutes(routes, initialPath)
+  await waitFor(() => expect(view.router.state.initialized).toBe(true))
+  // The router reports readiness slightly before React commits the page.
+  await waitFor(() => expect(view.container.innerHTML).not.toBe(''))
+  return view
 }
 
 interface MockResponse {

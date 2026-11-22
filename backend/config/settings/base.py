@@ -84,6 +84,9 @@ TEMPLATES = [
     },
 ]
 
+# Public address of the site (used for absolute URLs in sitemap.xml and robots.txt).
+PUBLIC_SITE_URL = env.str("PUBLIC_SITE_URL", default="http://localhost:5173")
+
 # Django's own admin lives under a configurable path so that /admin/* stays
 # free for the React administration dashboard.
 DJANGO_ADMIN_URL = env.str("DJANGO_ADMIN_URL", default="django-admin/")

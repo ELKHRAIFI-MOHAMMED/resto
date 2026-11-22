@@ -15,6 +15,8 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, NavLink, Outlet, Route, Routes, useNavigate } from 'react-router'
 
+import './i18n'
+
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { Toaster } from '@/components/Toaster'
 import { cx } from '@/lib/cx'

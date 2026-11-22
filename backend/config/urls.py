@@ -17,6 +17,8 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from apps.core.seo import robots_txt, sitemap_xml
+
 api_patterns = [
     path("", include("apps.core.urls")),
     path("auth/", include("apps.accounts.urls")),
@@ -33,6 +35,8 @@ api_patterns = [
 urlpatterns = [
     path(settings.DJANGO_ADMIN_URL, admin.site.urls),
     path("api/", include(api_patterns)),
+    path("robots.txt", robots_txt, name="robots"),
+    path("sitemap.xml", sitemap_xml, name="sitemap"),
 ]
 
 if settings.DEBUG:

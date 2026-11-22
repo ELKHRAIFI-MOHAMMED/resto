@@ -7,7 +7,7 @@ import { useCartStore, type NewCartLine } from '@/store/cart'
 import { useLastOrderStore } from '@/store/lastOrder'
 import { fakeCreatedOrder, fakeQuote } from '@/test/fakeQuote'
 import { burger, categories, hours, page, products, restaurant, tea, zones } from '@/test/fixtures'
-import { apiError, mockApi, renderRoutes, type MockRequest } from '@/test/utils'
+import { apiError, mockApi, renderRoutesReady, type MockRequest } from '@/test/utils'
 
 // Testing Library normalises the non-breaking space to a regular one.
 const mad = (amount: string) => `${amount} MAD`
@@ -66,7 +66,7 @@ function fakeWindow() {
 }
 
 async function fillContact(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByLabelText('Nom complet'), 'Mohamed')
+  await user.type(await screen.findByLabelText('Nom complet'), 'Mohamed')
   await user.type(screen.getByLabelText('Téléphone'), '06 12 34 56 78')
 }
 
@@ -78,7 +78,7 @@ describe('cart page with server quote', () => {
       lines: state.lines.map((line) => ({ ...line, unitPriceCents: 1000 })),
     }))
     mockOrderingApi()
-    renderRoutes(routes, '/cart')
+    await renderRoutesReady(routes, '/cart')
 
     expect(
       await screen.findByText(
@@ -104,7 +104,7 @@ describe('cart page with server quote', () => {
           items: [{ index: 0, code: 'product_unavailable', message: 'x' }],
         }),
     })
-    renderRoutes(routes, '/cart')
+    await renderRoutesReady(routes, '/cart')
 
     expect(
       await screen.findByText('Ce plat n’est pas disponible pour le moment.'),
@@ -125,18 +125,20 @@ describe('checkout', () => {
 
   afterEach(() => useLastOrderStore.getState().forget())
 
-  it('redirects to the cart when the cart is empty', () => {
+  it('redirects to the cart when the cart is empty', async () => {
     useCartStore.getState().clear()
     mockOrderingApi()
-    renderRoutes(routes, '/checkout')
+    await renderRoutesReady(routes, '/checkout')
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Votre panier' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Votre panier' }),
+    ).toBeInTheDocument()
   })
 
   it('validates the form with translated messages and focuses the first error', async () => {
     const user = userEvent.setup()
     const { orderRequests } = mockOrderingApi()
-    renderRoutes(routes, '/checkout')
+    await renderRoutesReady(routes, '/checkout')
     await screen.findByRole('radio', { name: /Livraison/ })
 
     await user.click(screen.getByRole('button', { name: 'Valider et ouvrir WhatsApp' }))
@@ -151,7 +153,7 @@ describe('checkout', () => {
   it('asks for the delivery fields only for delivery', async () => {
     const user = userEvent.setup()
     mockOrderingApi()
-    renderRoutes(routes, '/checkout')
+    await renderRoutesReady(routes, '/checkout')
     await fillContact(user)
 
     await user.click(await screen.findByRole('radio', { name: /Livraison/ }))
@@ -168,7 +170,7 @@ describe('checkout', () => {
   it('shows live totals with the delivery fee of the chosen zone', async () => {
     const user = userEvent.setup()
     mockOrderingApi()
-    renderRoutes(routes, '/checkout')
+    await renderRoutesReady(routes, '/checkout')
 
     await user.click(await screen.findByRole('radio', { name: /Livraison/ }))
     const summary = screen.getByRole('region', { name: 'Votre commande' })
@@ -187,7 +189,7 @@ describe('checkout', () => {
     const open = vi.fn(() => handoff)
     vi.stubGlobal('open', open)
     const { orderRequests } = mockOrderingApi()
-    const { router } = renderRoutes(routes, '/checkout')
+    const { router } = await renderRoutesReady(routes, '/checkout')
 
     await fillContact(user)
     await user.click(await screen.findByRole('radio', { name: /À emporter/ }))
@@ -242,7 +244,7 @@ describe('checkout', () => {
     const assign = vi.fn()
     vi.stubGlobal('location', { ...window.location, assign })
     mockOrderingApi()
-    renderRoutes(routes, '/checkout')
+    await renderRoutesReady(routes, '/checkout')
 
     await fillContact(user)
     await user.click(await screen.findByRole('radio', { name: /À emporter/ }))
@@ -258,7 +260,7 @@ describe('checkout', () => {
     const handoff = fakeWindow()
     vi.stubGlobal('open', () => handoff)
     mockOrderingApi({ create: () => apiError(409, 'ordering_closed') })
-    renderRoutes(routes, '/checkout')
+    await renderRoutesReady(routes, '/checkout')
 
     await fillContact(user)
     await user.click(await screen.findByRole('radio', { name: /À emporter/ }))
@@ -282,7 +284,7 @@ describe('checkout', () => {
         return fakeCreatedOrder(request.body)
       },
     })
-    renderRoutes(routes, '/checkout')
+    await renderRoutesReady(routes, '/checkout')
 
     await fillContact(user)
     await user.click(await screen.findByRole('radio', { name: /À emporter/ }))
@@ -308,7 +310,7 @@ describe('checkout', () => {
       create: () =>
         apiError(400, 'validation_error', { customer_phone: ['Enter a valid phone number.'] }),
     })
-    renderRoutes(routes, '/checkout')
+    await renderRoutesReady(routes, '/checkout')
 
     await fillContact(user)
     await user.click(await screen.findByRole('radio', { name: /À emporter/ }))
@@ -322,7 +324,7 @@ describe('checkout', () => {
 })
 
 describe('order page', () => {
-  it('survives a reload: the hand-off data is kept locally', () => {
+  it('survives a reload: the hand-off data is kept locally', async () => {
     mockOrderingApi()
     useLastOrderStore.getState().save(
       fakeCreatedOrder({
@@ -333,7 +335,7 @@ describe('order page', () => {
         customer_name: 'Sara',
       }),
     )
-    renderRoutes(routes, '/order/RF-2026-0042')
+    await renderRoutesReady(routes, '/order/RF-2026-0042')
 
     expect(screen.getByRole('link', { name: 'Ouvrir WhatsApp' })).toHaveAttribute(
       'href',
@@ -343,9 +345,9 @@ describe('order page', () => {
     expect(screen.getByText('Sara')).toBeInTheDocument()
   })
 
-  it('explains when the order is not on this device', () => {
+  it('explains when the order is not on this device', async () => {
     mockOrderingApi()
-    renderRoutes(routes, '/order/RF-2026-9999')
+    await renderRoutesReady(routes, '/order/RF-2026-9999')
 
     expect(screen.getByText('Commande introuvable sur cet appareil')).toBeInTheDocument()
   })

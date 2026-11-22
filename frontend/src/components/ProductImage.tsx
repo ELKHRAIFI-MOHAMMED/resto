@@ -24,8 +24,8 @@ export function ProductImage({
   if (!src || failedSrc === src) {
     return (
       <div
-        role="img"
-        aria-label={alt}
+        // A decorative image (alt="") stays decorative: hidden, not an unnamed img.
+        {...(alt ? { role: 'img', 'aria-label': alt } : { 'aria-hidden': true })}
         className={cx('flex items-center justify-center bg-surface', className)}
       >
         <ZelligeStar className="h-1/3 max-h-16 w-1/3 max-w-16 text-border" />

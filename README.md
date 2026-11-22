@@ -9,11 +9,11 @@ zones, settings and orders from a private dashboard.
 Prices are in Moroccan dirhams (MAD). There is no online payment: orders are
 paid on delivery or pickup.
 
-> **Project status: Phase 5 (administration) complete.** Customers browse,
+> **Project status: Phase 6 (quality) complete.** Customers browse,
 > order and send their order on WhatsApp; the team manages orders, the menu,
 > delivery zones and restaurant settings from `/admin`, in French, Arabic
-> (right-to-left) and English. Quality and deployment phases follow (see
-> [Roadmap](#roadmap)).
+> (right-to-left) and English. Tested, audited and documented; the
+> production deployment setup is the last phase (see [Roadmap](#roadmap)).
 
 ---
 
@@ -178,6 +178,7 @@ All variables live in the root `.env` (template: [.env.example](.env.example)).
 | `ORDER_REFERENCE_PREFIX` | Django | Prefix of order references (default `RF`, e.g. `RF-2026-0001`) |
 | `THROTTLE_ANON`, `THROTTLE_ORDERS`, `THROTTLE_LOGIN` | Django | Rate limits (defaults `120/minute`, `10/minute`, `5/minute`) |
 | `MAX_IMAGE_UPLOAD_SIZE` | Django | Maximum upload size in bytes (default 5 MB) |
+| `PUBLIC_SITE_URL` | Django | Public address of the site, used for absolute URLs in `sitemap.xml` and `robots.txt` |
 | `DATABASE_URL` | Django | Optional; overrides the `POSTGRES_*` values |
 | `DB_CONN_MAX_AGE` | Django | Seconds to keep database connections open: 60 in production, 0 in development (the dev server uses a new thread, hence a new connection, per request) |
 | `VITE_API_BASE_URL` | Frontend | API base path or URL (default `/api`) |
@@ -190,6 +191,11 @@ Only `VITE_*` variables reach the browser bundle. Never put secrets in them.
 > and every connection stalls.
 
 ## Testing and code quality
+
+| Suite | Coverage |
+| --- | --- |
+| Backend, pytest (184 tests) | Models and database constraints, pricing (variants, add-ons, sale prices, delivery fees, free delivery, minimum order), order creation and snapshots, idempotent retries, WhatsApp message, status workflow, authentication, permissions (anonymous, customer, manager, owner), uploads, rate limiting, dashboard, sitemap |
+| Frontend, Vitest + Testing Library (113 tests) | Money and pricing helpers, cart store, i18n (keys, plurals, RTL), menu, product options, cart quotes, checkout validation and error mapping, WhatsApp URLs and hand-off (desktop and phone), order page, admin flows, and axe-core accessibility checks on six pages in French and Arabic |
 
 ```bash
 # Backend (needs the PostgreSQL container running)
@@ -231,8 +237,25 @@ restoflow/
 3. ✅ **Frontend:** design system, homepage, menu, product detail, cart store, i18n content
 4. ✅ **Ordering:** cart, checkout, server-side price validation, order creation, WhatsApp hand-off
 5. ✅ **Admin:** login, dashboard, product, category, order and settings management
-6. **Quality:** full test pass, security hardening, performance, documentation
+6. ✅ **Quality:** full test pass, security hardening, performance, documentation
 7. **Deployment:** production settings, static and media files, build, deployment guide
+
+## Security
+
+- Staff authentication with Django sessions (HttpOnly cookie) and CSRF
+  protection, including on the login view; login is rate limited.
+- Deny-by-default API permissions; staff-only admin endpoints; owner-only
+  restaurant settings. Customers never have accounts.
+- Prices are always recomputed server-side; clients send identifiers only.
+- Input validation on every endpoint, database `CHECK` constraints on money
+  and quantities, upload validation (type, size, dimensions, Pillow decoding,
+  random file names).
+- Rate limits on order creation and login, counted in a cache shared by all
+  production workers.
+- Production settings enforce HTTPS redirects, HSTS, secure cookies and a
+  strong secret key; `manage.py check --deploy` passes (HSTS preload is opt-in).
+- Dependency audits: `npm audit` and `pip-audit` report no known
+  vulnerabilities.
 
 ## Deployment
 

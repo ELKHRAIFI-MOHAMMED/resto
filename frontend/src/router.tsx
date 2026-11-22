@@ -2,23 +2,32 @@ import { createBrowserRouter, type RouteObject } from 'react-router'
 
 import { PublicLayout } from '@/layouts/PublicLayout'
 import { CartPage } from '@/pages/CartPage'
-import { CheckoutPage } from '@/pages/CheckoutPage'
 import { HomePage } from '@/pages/HomePage'
-import { MenuPage } from '@/pages/MenuPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
-import { OrderPage } from '@/pages/OrderPage'
-import { ProductPage } from '@/pages/ProductPage'
 
 export const routes: RouteObject[] = [
   {
     element: <PublicLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'menu', element: <MenuPage /> },
-      { path: 'menu/:slug', element: <ProductPage /> },
+      // Home, cart and 404 stay in the main bundle; other pages load on demand.
+      {
+        path: 'menu',
+        lazy: async () => ({ Component: (await import('@/pages/MenuPage')).MenuPage }),
+      },
+      {
+        path: 'menu/:slug',
+        lazy: async () => ({ Component: (await import('@/pages/ProductPage')).ProductPage }),
+      },
       { path: 'cart', element: <CartPage /> },
-      { path: 'checkout', element: <CheckoutPage /> },
-      { path: 'order/:reference', element: <OrderPage /> },
+      {
+        path: 'checkout',
+        lazy: async () => ({ Component: (await import('@/pages/CheckoutPage')).CheckoutPage }),
+      },
+      {
+        path: 'order/:reference',
+        lazy: async () => ({ Component: (await import('@/pages/OrderPage')).OrderPage }),
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

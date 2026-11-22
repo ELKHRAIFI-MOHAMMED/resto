@@ -27,3 +27,12 @@ SECURE_HSTS_PRELOAD = env.bool("DJANGO_SECURE_HSTS_PRELOAD", default=False)
 # Cookies
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
+# Rate limits are counted in the cache: it must be shared by every Gunicorn
+# worker. The database cache needs no extra service (`createcachetable`).
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "django_cache",
+    }
+}
