@@ -9,10 +9,6 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 import { OrderPage } from '@/pages/OrderPage'
 import { ProductPage } from '@/pages/ProductPage'
 
-/*
- * The /admin/* dashboard is added in Phase 5, lazily loaded so visitors
- * never download it.
- */
 export const routes: RouteObject[] = [
   {
     element: <PublicLayout />,
@@ -25,6 +21,11 @@ export const routes: RouteObject[] = [
       { path: 'order/:reference', element: <OrderPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
+  },
+  {
+    // The dashboard is its own chunk: public visitors never download it.
+    path: 'admin/*',
+    lazy: async () => ({ Component: (await import('@/features/admin/AdminApp')).AdminApp }),
   },
 ]
 

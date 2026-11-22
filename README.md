@@ -9,10 +9,11 @@ zones, settings and orders from a private dashboard.
 Prices are in Moroccan dirhams (MAD). There is no online payment: orders are
 paid on delivery or pickup.
 
-> **Project status: Phase 4 (ordering) complete.** Customers can browse the
-> menu, fill a cart, check out and send their order on WhatsApp, in French,
-> Arabic (right-to-left) and English. The administration dashboard comes next
-> (see [Roadmap](#roadmap)).
+> **Project status: Phase 5 (administration) complete.** Customers browse,
+> order and send their order on WhatsApp; the team manages orders, the menu,
+> delivery zones and restaurant settings from `/admin`, in French, Arabic
+> (right-to-left) and English. Quality and deployment phases follow (see
+> [Roadmap](#roadmap)).
 
 ---
 
@@ -22,7 +23,7 @@ paid on delivery or pickup.
 | --- | --- | --- |
 | Public site | Homepage, menu with category filters and search, product detail with variants and add-ons | ✅ |
 | Ordering | Cart with server-checked totals, checkout with validation, delivery zones, fees and minimums, order snapshots, WhatsApp hand-off with retry | ✅ |
-| Administration | Dashboard stats, product/category/order management, delivery zones, restaurant settings, manual status workflow | API ✅ · UI in Phase 5 |
+| Administration | Staff login, dashboard (orders, confirmed revenue, popular dishes, daily chart), orders with manual status workflow, products with sizes, extras and photos, categories, delivery zones, restaurant settings and opening hours | ✅ |
 | Multilingual | French (default), Arabic with full RTL layout, English; translated catalog content | ✅ |
 | API | REST, OpenAPI/Swagger docs, pagination, filtering, search, consistent error codes | ✅ |
 | Security | Session auth + CSRF, deny-by-default permissions, owner/manager roles, rate limiting, upload validation, DB constraints | ✅ · reviewed again in Phase 6 |
@@ -142,6 +143,7 @@ card that confirms the SPA can reach the API and the database.
 | URL | Purpose |
 | --- | --- |
 | http://localhost:5173 | React app (proxies `/api` and `/media` to Django) |
+| http://localhost:5173/admin | Administration dashboard (log in with a staff account, e.g. the one from `createsuperuser`) |
 | http://127.0.0.1:8000/api/health/ | Health check |
 | http://127.0.0.1:8000/api/docs/ | Swagger UI |
 | http://127.0.0.1:8000/api/schema/ | OpenAPI 3 schema |
@@ -228,7 +230,7 @@ restoflow/
 2. ✅ **Backend:** models and migrations, serializers, public and admin APIs, authentication, tests
 3. ✅ **Frontend:** design system, homepage, menu, product detail, cart store, i18n content
 4. ✅ **Ordering:** cart, checkout, server-side price validation, order creation, WhatsApp hand-off
-5. **Admin:** login, dashboard, product, category, order and settings management
+5. ✅ **Admin:** login, dashboard, product, category, order and settings management
 6. **Quality:** full test pass, security hardening, performance, documentation
 7. **Deployment:** production settings, static and media files, build, deployment guide
 

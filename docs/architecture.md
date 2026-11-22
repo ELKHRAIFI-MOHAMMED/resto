@@ -3,7 +3,7 @@
 This document describes how RestoFlow is put together and why. It is updated at
 the end of each development phase.
 
-> **Status:** Phase 3 (public frontend) complete. Sections marked *planned* describe
+> **Status:** Phase 5 (administration) complete. Sections marked *planned* describe
 > the agreed design for later phases and will be confirmed as they are built.
 
 ## 1. Overview
@@ -256,6 +256,26 @@ the API.
   translated feedback; backend field errors map back onto the same fields.
 - Every API error code has a translated message (`features/checkout/errors.ts`).
 
+## 6b. Administration dashboard
+
+`/admin/*` is a separate, lazily loaded chunk (`features/admin/AdminApp.tsx`,
+about 15 KB gzipped) with its own layout; public visitors never download it.
+
+| Page | What staff do there |
+| --- | --- |
+| Login | Session login (CSRF cookie first, then `POST /api/auth/login/`); rate limited server-side |
+| Dashboard | Initiated vs confirmed orders, confirmed revenue, available products, orders by status, popular dishes, orders-per-day bar chart (single series, brand accent, hover values, table view) |
+| Orders | Filter by status, type, dates; search reference, name or phone; auto-refresh every 30 s. Detail page shows snapshots and the received WhatsApp message, offers only the transitions the backend allows, and links to reply on WhatsApp |
+| Products | List with quick switches (available today, active, featured); editor with FR/AR/EN fields, prices, add-ons, image, sizes and gallery |
+| Extras, categories, zones | One generic table + modal form (`CrudPage.tsx`); categories add reordering and images |
+| Settings | Owner only: restaurant profile, WhatsApp number, ordering switches, fees, social links, weekly opening hours with several slots per day |
+
+Rules: every admin request goes through the same API client (session cookie,
+CSRF header); the route guard (`RequireStaff`) is a convenience, the API is
+the authority (403 for anyone else). Order confirmation is always a manual
+action, with a reminder to wait for the customer's WhatsApp message.
+Images are uploaded with a separate multipart request after the JSON save.
+
 ## 7. Key decisions
 
 | # | Decision | Rationale |
@@ -284,3 +304,5 @@ the API.
 | 22 | The quote endpoint accepts a cart without an order type | The cart shows exact, server-checked amounts before the customer chooses delivery or pickup, with no pricing logic in React |
 | 23 | Pre-opened tab on desktop, same-tab hand-off on phones | Works with pop-up blockers, keeps the order saved first, and keeps Back working on phones |
 | 24 | Persistent database connections (`CONN_MAX_AGE`) only in production | The dev server opens one thread per request; persistent connections there exhaust PostgreSQL's client limit |
+| 25 | The admin is a lazy chunk with descendant routes, and shares components, API client and i18n with the public site | One codebase and design language, without making visitors download back-office code |
+| 26 | Admin dashboards use lining figures (Jost) rather than the display face | Italiana's old-style numerals read poorly as data |
