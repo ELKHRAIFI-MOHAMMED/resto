@@ -1,0 +1,9 @@
+# Runtime dependencies (production + development)
+Django>=5.2.19,<5.3            # LTS release, supported until April 2028
+djangorestframework>=3.18,<3.19
+django-filter>=26.2,<27
+drf-spectacular>=0.30,<0.31
+django-cors-headers>=4.9,<5
+django-environ>=0.14,<0.15
+psycopg[binary]>=3.3,<3.4
+Pillow>=12.0,<14

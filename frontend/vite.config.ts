@@ -1,0 +1,37 @@
+import { fileURLToPath, URL } from 'node:url'
+
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+import { loadEnv } from 'vite'
+import { defineConfig } from 'vitest/config'
+
+// The repository-level .env is shared with Django and Docker Compose.
+const envDir = fileURLToPath(new URL('..', import.meta.url))
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, envDir, 'VITE_')
+  const apiTarget = env.VITE_DEV_API_PROXY_TARGET || 'http://127.0.0.1:8000'
+
+  return {
+    envDir,
+    plugins: [react(), tailwindcss()],
+    resolve: {
+      alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+    },
+    server: {
+      port: 5173,
+      // Same-origin in development: session and CSRF cookies just work.
+      proxy: {
+        '/api': { target: apiTarget, changeOrigin: false },
+        '/media': { target: apiTarget, changeOrigin: false },
+      },
+    },
+    test: {
+      environment: 'jsdom',
+      setupFiles: ['./src/test/setup.ts'],
+      css: false,
+      restoreMocks: true,
+      unstubGlobals: true,
+    },
+  }
+})

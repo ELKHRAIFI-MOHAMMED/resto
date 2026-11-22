@@ -1,0 +1,38 @@
+[project]
+name = "restoflow-backend"
+version = "0.1.0"
+description = "Django REST API for the RestoFlow restaurant ordering platform"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["*/migrations/*", ".venv"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "B",        # bugbear
+    "UP",       # pyupgrade
+    "DJ",       # django
+    "S",        # bandit (security)
+    "SIM",      # simplify
+    "C4",       # comprehensions
+    "RUF",      # ruff-specific
+]
+ignore = ["RUF012"]  # Django/DRF class attributes (Meta.fields etc.) are mutable by design
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+"config/settings/test.py" = ["S105"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+addopts = "--strict-markers -ra"

@@ -1,0 +1,35 @@
+{
+  "brand": {
+    "name": "RestoFlow",
+    "tagline": "Une cuisine généreuse, commandée en quelques gestes."
+  },
+  "nav": {
+    "home": "Accueil",
+    "mainNavigation": "Navigation principale"
+  },
+  "language": {
+    "label": "Langue",
+    "switchTo": "Passer en {{language}}"
+  },
+  "home": {
+    "metaDescription": "Commandez vos plats préférés en ligne et finalisez votre commande sur WhatsApp.",
+    "foundationNotice": "Fondations techniques en place. La carte et la commande en ligne arrivent dans les prochaines phases."
+  },
+  "status": {
+    "title": "État du système",
+    "api": "API",
+    "database": "Base de données",
+    "checking": "Vérification…",
+    "ok": "Opérationnel",
+    "unavailable": "Indisponible",
+    "retry": "Réessayer"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "description": "La page que vous cherchez n’existe pas ou a été déplacée.",
+    "backHome": "Retour à l’accueil"
+  },
+  "footer": {
+    "rights": "© {{year}} {{name}}. Tous droits réservés."
+  }
+}

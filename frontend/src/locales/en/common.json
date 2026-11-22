@@ -1,0 +1,35 @@
+{
+  "brand": {
+    "name": "RestoFlow",
+    "tagline": "Generous cooking, ordered in a few taps."
+  },
+  "nav": {
+    "home": "Home",
+    "mainNavigation": "Main navigation"
+  },
+  "language": {
+    "label": "Language",
+    "switchTo": "Switch to {{language}}"
+  },
+  "home": {
+    "metaDescription": "Order your favourite dishes online and complete your order on WhatsApp.",
+    "foundationNotice": "Technical foundations are in place. The menu and online ordering arrive in the next phases."
+  },
+  "status": {
+    "title": "System status",
+    "api": "API",
+    "database": "Database",
+    "checking": "Checking…",
+    "ok": "Operational",
+    "unavailable": "Unavailable",
+    "retry": "Retry"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you are looking for does not exist or has been moved.",
+    "backHome": "Back to home"
+  },
+  "footer": {
+    "rights": "© {{year}} {{name}}. All rights reserved."
+  }
+}
