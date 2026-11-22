@@ -1,14 +1,15 @@
 """
-Production settings.
+Production settings (Gunicorn behind nginx, see docs/deployment.md).
 
-Static file serving, media storage and the WSGI server are finalised in
-Phase 7 (deployment); this module already enforces the security baseline.
+- Static files (Django admin, API docs) are served by WhiteNoise.
+- Uploaded media is stored on a volume and served directly by nginx.
+- Rate limits use a database cache shared by every worker.
 """
 
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F403
-from .base import ALLOWED_HOSTS, SECRET_KEY, env
+from .base import ALLOWED_HOSTS, DJANGO_ADMIN_URL, MIDDLEWARE, SECRET_KEY, env
 
 DEBUG = False
 
@@ -16,6 +17,19 @@ if SECRET_KEY.startswith("change-me") or len(SECRET_KEY) < 50:
     raise ImproperlyConfigured("DJANGO_SECRET_KEY must be a long, random, secret value.")
 if not ALLOWED_HOSTS:
     raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must be set in production.")
+# nginx forwards only /django-admin/ to Django: a private admin path must live under it.
+if not DJANGO_ADMIN_URL.startswith("django-admin/"):
+    raise ImproperlyConfigured("DJANGO_ADMIN_URL must start with 'django-admin/'.")
+
+# Static files: compressed, cache-busted names, served by WhiteNoise.
+MIDDLEWARE.insert(
+    MIDDLEWARE.index("django.middleware.security.SecurityMiddleware") + 1,
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+)
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 
 # HTTPS
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

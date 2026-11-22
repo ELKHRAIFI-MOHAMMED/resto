@@ -9,11 +9,10 @@ zones, settings and orders from a private dashboard.
 Prices are in Moroccan dirhams (MAD). There is no online payment: orders are
 paid on delivery or pickup.
 
-> **Project status: Phase 6 (quality) complete.** Customers browse,
-> order and send their order on WhatsApp; the team manages orders, the menu,
-> delivery zones and restaurant settings from `/admin`, in French, Arabic
-> (right-to-left) and English. Tested, audited and documented; the
-> production deployment setup is the last phase (see [Roadmap](#roadmap)).
+> **Project status: complete (all 7 phases).** Customers browse the menu,
+> order and send their order on WhatsApp; the team runs the restaurant from
+> `/admin`; everything works in French, Arabic (right-to-left) and English,
+> and ships as a tested, documented Docker stack.
 
 ---
 
@@ -228,7 +227,7 @@ restoflow/
 - [Architecture](docs/architecture.md): components, data flow, key decisions
 - [Database](docs/database.md): schema, relationships, constraints, demo data
 - [API reference](docs/api.md): conventions, error codes, order flow, admin endpoints (interactive docs at `/api/docs/`)
-- Deployment guide (`docs/deployment.md`): Phase 7
+- [Deployment](docs/deployment.md): production stack, HTTPS, operations, backups, checklist
 
 ## Roadmap
 
@@ -238,7 +237,7 @@ restoflow/
 4. ✅ **Ordering:** cart, checkout, server-side price validation, order creation, WhatsApp hand-off
 5. ✅ **Admin:** login, dashboard, product, category, order and settings management
 6. ✅ **Quality:** full test pass, security hardening, performance, documentation
-7. **Deployment:** production settings, static and media files, build, deployment guide
+7. ✅ **Deployment:** production settings, static and media files, build, deployment guide
 
 ## Security
 
@@ -259,6 +258,15 @@ restoflow/
 
 ## Deployment
 
-Production settings (`config.settings.production`) already enforce HTTPS
-redirects, HSTS, secure cookies and a strong secret key. The full deployment
-guide (static and media files, WSGI server, frontend build) comes in Phase 7.
+Production runs as three containers: PostgreSQL, Django behind Gunicorn, and
+nginx serving the React build with security headers and proxying the API.
+
+```bash
+cp .env.production.example .env.production   # fill every placeholder
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.production exec backend python manage.py createsuperuser
+```
+
+Put a TLS proxy in front (e.g. Caddy). The full guide covers HTTPS, backups,
+updates, hosting without Docker and a pre-launch checklist:
+[docs/deployment.md](docs/deployment.md).
