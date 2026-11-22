@@ -1,7 +1,7 @@
 """Local development settings."""
 
 from .base import *  # noqa: F403
-from .base import REST_FRAMEWORK, env
+from .base import DATABASES, REST_FRAMEWORK, env
 
 DEBUG = env.bool("DJANGO_DEBUG", default=True)
 
@@ -12,3 +12,8 @@ REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = [
 ]
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# The dev server handles each request in a new thread, so persistent
+# connections would pile up (one per thread) until PostgreSQL refuses new
+# clients. Keep them for production only.
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("DB_CONN_MAX_AGE", default=0)

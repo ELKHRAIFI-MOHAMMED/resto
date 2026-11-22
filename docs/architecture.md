@@ -186,7 +186,7 @@ Motion: one page-load reveal of the hero arch, plus feedback to user actions
 Accessibility: a skip link, visible focus, landmarks, labelled controls,
 `aria-live` for toasts and search results, and 44 px minimum touch targets.
 
-## 6. Ordering and WhatsApp flow *(backend done; UI in Phase 4)*
+## 6. Ordering and WhatsApp flow
 
 ```
 Customer        React SPA                      Django API                    PostgreSQL
@@ -211,6 +211,9 @@ Rules:
   client are ignored, and the backend computes the authoritative total.
 - The order is saved **before** WhatsApp opens. If WhatsApp fails to open, the
   customer keeps the order reference and gets a retry button.
+- The order page (`/order/:reference`) keeps the hand-off for 24 hours in the
+  browser (`store/lastOrder.ts`): it offers to reopen WhatsApp, copy the
+  message, or send it manually to the displayed number, and survives reloads.
 - The UI never says an order was "sent". It tells the customer to press
   **Send** in WhatsApp.
 - New orders start as *initiated* (awaiting the WhatsApp message). Only staff
@@ -227,6 +230,31 @@ Rules:
 - Staff move orders through a type-aware workflow
   (`pending → confirmed → preparing → ready | out_for_delivery → completed`,
   or `cancelled`). Invalid transitions return 409.
+
+### How WhatsApp is opened
+
+Browsers only allow new tabs during a user action, but the order must be
+saved before WhatsApp opens. `features/checkout/usePlaceOrder.ts` therefore:
+
+| Device | Hand-off |
+| --- | --- |
+| Desktop (fine pointer) | Opens an empty tab **inside the click**, saves the order, then points that tab at `wa.me` (with `opener` cleared). If the order fails, the tab is closed. If pop-ups are blocked, the order page offers the button. |
+| Phone or tablet (coarse pointer) | Saves the order, navigates to the order page, which hands off in the same tab (`location.assign`): the OS opens the WhatsApp app, and Back returns to the order page. |
+
+The URL is `https://wa.me/<digits>?text=<encodeURIComponent(message)>`
+(`features/checkout/whatsapp.ts`), with the number and message returned by
+the API.
+
+### Cart, quote and checkout
+
+- The cart page asks the API for a quote without an order type: exact
+  subtotal, flagged lines (`product_unavailable`, `variant_invalid`, …), and
+  stored prices and names refreshed when they changed (the customer is told).
+- The checkout quotes again whenever the order type or zone changes, showing
+  the delivery fee, the free-delivery threshold and the minimum order before
+  submitting. Client-side validation mirrors the backend rules for instant,
+  translated feedback; backend field errors map back onto the same fields.
+- Every API error code has a translated message (`features/checkout/errors.ts`).
 
 ## 7. Key decisions
 
@@ -252,3 +280,7 @@ Rules:
 | 18 | Native form controls styled with Tailwind; shadcn/ui not added for the public site | The public pages need few widgets; semantic HTML keeps the bundle small and accessible. shadcn/ui will be considered for the admin dashboard |
 | 19 | The whole menu is fetched once (following pagination); category filtering happens on the client, search goes to the API | Switching categories is instant, and search stays multilingual (names and descriptions in all three languages) |
 | 20 | Demo photos are Unsplash stock photos stored in `backend/demo/images` and attached by `seed_demo`; dishes without a matching photo keep the placeholder | A realistic demo without passing off unrelated photos as dishes |
+| 21 | Idempotent order creation through a client-generated `client_token` (unique in the database) | Mobile connections drop; a retry must never create a second order |
+| 22 | The quote endpoint accepts a cart without an order type | The cart shows exact, server-checked amounts before the customer chooses delivery or pickup, with no pricing logic in React |
+| 23 | Pre-opened tab on desktop, same-tab hand-off on phones | Works with pop-up blockers, keeps the order saved first, and keeps Back working on phones |
+| 24 | Persistent database connections (`CONN_MAX_AGE`) only in production | The dev server opens one thread per request; persistent connections there exhaust PostgreSQL's client limit |

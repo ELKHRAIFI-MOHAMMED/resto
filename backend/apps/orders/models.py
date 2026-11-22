@@ -68,6 +68,13 @@ class Order(TimeStampedModel):
 
     confirmed_at = models.DateTimeField(_("confirmed at"), null=True, blank=True)
 
+    # Random token sent by the client with each checkout attempt. Retrying the
+    # same attempt (e.g. after a dropped connection) returns the existing order
+    # instead of creating a duplicate.
+    client_token = models.UUIDField(
+        _("client token"), null=True, blank=True, unique=True, editable=False
+    )
+
     class Meta:
         verbose_name = _("order")
         verbose_name_plural = _("orders")

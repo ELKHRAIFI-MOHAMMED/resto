@@ -294,3 +294,105 @@ def test_order_creation_is_rate_limited(api_client, restaurant, delivery_payload
     ]
 
     assert statuses == [201, 201, 429]
+
+
+# --- Cart quotes and retry-safe creation (Phase 4) --------------------------------
+
+
+def test_quote_without_order_type_prices_items_only(api_client, restaurant, burger, cheese):
+    restaurant.minimum_order_amount = D("500.00")  # delivery rules must not apply yet
+    restaurant.save()
+
+    response = api_client.post(
+        QUOTE_URL,
+        {"items": [{"product": burger.pk, "quantity": 2, "addons": [cheese.pk]}]},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["order_type"] is None
+    assert body["subtotal"] == "116.00"
+    assert body["delivery_fee"] == "0.00"
+
+
+def test_quote_without_order_type_still_reports_item_errors(api_client, restaurant, burger):
+    burger.is_available = False
+    burger.save()
+
+    response = api_client.post(
+        QUOTE_URL, {"items": [{"product": burger.pk, "quantity": 1}]}, format="json"
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"]["details"]["items"][0]["code"] == "product_unavailable"
+
+
+def test_order_creation_requires_an_order_type(api_client, restaurant, delivery_payload):
+    delivery_payload.pop("order_type")
+
+    response = api_client.post(ORDERS_URL, delivery_payload, format="json")
+
+    assert response.status_code == 400
+    assert "order_type" in response.json()["error"]["details"]
+
+
+def test_retrying_with_the_same_client_token_returns_the_same_order(
+    api_client, restaurant, delivery_payload
+):
+    delivery_payload["client_token"] = "5f0c6f1e-2b1a-4d7e-9a53-3d2f0c1b7a10"
+
+    first = api_client.post(ORDERS_URL, delivery_payload, format="json")
+    retry = api_client.post(ORDERS_URL, delivery_payload, format="json")
+
+    assert first.status_code == 201
+    assert retry.status_code == 200
+    assert retry.json()["reference"] == first.json()["reference"]
+    assert retry.json()["whatsapp"] == first.json()["whatsapp"]
+    assert Order.objects.count() == 1
+
+
+def test_different_client_tokens_create_different_orders(api_client, restaurant, delivery_payload):
+    references = set()
+    for token in ("11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"):
+        delivery_payload["client_token"] = token
+        references.add(
+            api_client.post(ORDERS_URL, delivery_payload, format="json").json()["reference"]
+        )
+
+    assert len(references) == 2
+
+
+def test_concurrent_duplicate_token_returns_the_winning_order(
+    api_client, restaurant, delivery_payload, monkeypatch
+):
+    """Simulate losing the race: the token is free when checked, taken at insert time."""
+    from apps.orders import views
+
+    token = "33333333-3333-4333-8333-333333333333"
+    delivery_payload["client_token"] = token
+    winner = api_client.post(ORDERS_URL, delivery_payload, format="json").json()
+
+    calls = {"count": 0}
+    real_find = views.find_order_by_client_token
+
+    def first_check_misses(value):
+        calls["count"] += 1
+        return None if calls["count"] == 1 else real_find(value)
+
+    monkeypatch.setattr(views, "find_order_by_client_token", first_check_misses)
+
+    response = api_client.post(ORDERS_URL, delivery_payload, format="json")
+
+    assert response.status_code == 200
+    assert response.json()["reference"] == winner["reference"]
+    assert Order.objects.count() == 1
+
+
+def test_invalid_client_token_is_rejected(api_client, restaurant, delivery_payload):
+    delivery_payload["client_token"] = "not-a-uuid"
+
+    response = api_client.post(ORDERS_URL, delivery_payload, format="json")
+
+    assert response.status_code == 400
+    assert "client_token" in response.json()["error"]["details"]

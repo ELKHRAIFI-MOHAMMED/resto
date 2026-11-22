@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.db.models import Count, Prefetch
 from django.utils.translation import get_language
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -23,7 +24,7 @@ from .serializers import (
     OrderQuoteSerializer,
     OrderStatusUpdateSerializer,
 )
-from .services import change_order_status, create_order
+from .services import change_order_status, create_order, find_order_by_client_token
 
 
 class OrderQuoteView(PublicAPIMixin, APIView):
@@ -42,7 +43,7 @@ class OrderQuoteView(PublicAPIMixin, APIView):
         serializer = OrderQuoteInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         quote = price_order(
-            order_type=serializer.validated_data["order_type"],
+            order_type=serializer.validated_data.get("order_type"),
             items=serializer.item_requests(),
             delivery_zone_id=serializer.validated_data.get("delivery_zone"),
         )
@@ -53,6 +54,9 @@ class OrderCreateView(PublicAPIMixin, APIView):
     """
     Create an order and return the WhatsApp hand-off data. The order is saved
     as `pending`: it is only confirmed manually by the restaurant.
+
+    Sending the same `client_token` again returns the existing order (200)
+    instead of creating a duplicate, so the client can safely retry.
     """
 
     throttle_classes = [AnonRateThrottle, ScopedRateThrottle]
@@ -62,19 +66,31 @@ class OrderCreateView(PublicAPIMixin, APIView):
         tags=["orders"],
         summary="Place an order",
         request=OrderCreateInputSerializer,
-        responses={201: OrderCreatedSerializer},
+        responses={201: OrderCreatedSerializer, 200: OrderCreatedSerializer},
     )
     def post(self, request):
         serializer = OrderCreateInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        order = create_order(
-            order_type=data["order_type"],
-            items=serializer.item_requests(),
-            customer=serializer.customer_details(),
-            delivery_zone_id=data.get("delivery_zone"),
-            language=get_language(),
-        )
+        token = data.get("client_token")
+
+        if existing := find_order_by_client_token(token):
+            return Response(OrderCreatedSerializer(existing).data, status=status.HTTP_200_OK)
+        try:
+            order = create_order(
+                order_type=data["order_type"],
+                items=serializer.item_requests(),
+                customer=serializer.customer_details(),
+                delivery_zone_id=data.get("delivery_zone"),
+                language=get_language(),
+                client_token=token,
+            )
+        except IntegrityError:
+            # A concurrent request with the same token won the race.
+            existing = find_order_by_client_token(token)
+            if existing is None:
+                raise
+            return Response(OrderCreatedSerializer(existing).data, status=status.HTTP_200_OK)
         return Response(OrderCreatedSerializer(order).data, status=status.HTTP_201_CREATED)
 
 

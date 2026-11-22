@@ -106,6 +106,7 @@ Content-Type: application/json
   "delivery_address": "5 rue Test",
   "city": "Casablanca",
   "customer_notes": "Interphone 3",
+  "client_token": "5f0c6f1e-2b1a-4d7e-9a53-3d2f0c1b7a10",
   "items": [
     { "product": 2, "quantity": 2, "addons": [1], "special_instructions": "" },
     { "product": 4, "quantity": 1, "variant": 9, "special_instructions": "Sans oignons" }
@@ -126,6 +127,10 @@ Rules:
   restaurant's `free_delivery_threshold`. The minimum subtotal for delivery is
   the higher of the zone's and the restaurant's minimum. Pickup has no fee and
   no minimum.
+- `client_token` (optional UUID) makes the request safe to retry: sending the
+  same token again returns the order already created, with `200 OK` instead
+  of `201`, rather than a duplicate. The frontend generates one per checkout
+  attempt, so a dropped connection never produces two orders.
 
 Response `201 Created`:
 
@@ -165,9 +170,13 @@ The frontend opens
 The order is already saved as `pending`. It is **not** confirmed: the customer
 must press Send in WhatsApp, and staff confirm the order by hand.
 
-`POST /orders/quote/` takes `order_type`, `delivery_zone` and `items` and
-returns the same amounts (`items`, `subtotal`, `delivery_fee`, `total`,
-`free_delivery_applied`, `minimum_order_amount`) without saving anything.
+`POST /orders/quote/` takes `items` and optionally `order_type` and
+`delivery_zone`, and returns the same amounts (`items`, `subtotal`,
+`delivery_fee`, `total`, `free_delivery_applied`, `minimum_order_amount`)
+without saving anything. Without `order_type` (the cart page) only the items
+are validated and priced; delivery rules apply once a type, and for delivery a
+zone, are given. Item problems come back as `invalid_items` with
+`details.items[]`, so the cart can flag the exact lines.
 
 ## Authentication
 

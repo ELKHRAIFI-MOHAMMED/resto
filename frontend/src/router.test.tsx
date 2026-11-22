@@ -16,7 +16,8 @@ import {
   tea,
   zones,
 } from '@/test/fixtures'
-import { mockApi, renderRoutes } from '@/test/utils'
+import { fakeQuote } from '@/test/fakeQuote'
+import { mockApi, renderRoutes, type MockRequest } from '@/test/utils'
 
 // Testing Library normalises the non-breaking space to a regular one.
 const mad = (amount: string) => `${amount} MAD`
@@ -27,7 +28,7 @@ function mockCatalog(extra: Record<string, unknown> = {}) {
     '/restaurant/hours/': hours,
     '/categories/': categories,
     '/delivery/zones/': zones,
-    '/products/': (url: URL) => {
+    '/products/': ({ url }: MockRequest) => {
       const search = url.searchParams.get('search')?.toLowerCase()
       const featured = url.searchParams.get('featured') === 'true'
       return page(
@@ -39,6 +40,7 @@ function mockCatalog(extra: Record<string, unknown> = {}) {
       )
     },
     [`/products/${burger.slug}/`]: burgerDetail,
+    '/orders/quote/': ({ body }: MockRequest) => fakeQuote(body),
     ...extra,
   })
 }
@@ -223,7 +225,8 @@ describe('cart page', () => {
     renderRoutes(routes, '/cart')
 
     await user.click(screen.getByRole('button', { name: 'Ajouter une unité' }))
-    expect(screen.getAllByText(mad('30'))).toHaveLength(2) // line total + subtotal
+    // Line total at once; the subtotal follows the (debounced) server quote.
+    await waitFor(() => expect(screen.getAllByText(mad('30'))).toHaveLength(2))
 
     await user.click(screen.getByRole('button', { name: 'Retirer Thé à la menthe' }))
     await waitFor(() => expect(screen.getByText('Votre panier est vide.')).toBeInTheDocument())

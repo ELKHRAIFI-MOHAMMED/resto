@@ -1,5 +1,6 @@
 """Order creation and the manual status workflow."""
 
+import uuid
 from dataclasses import dataclass
 
 from django.conf import settings
@@ -47,6 +48,7 @@ def create_order(
     customer: CustomerDetails,
     delivery_zone_id: int | None = None,
     language: str | None = None,
+    client_token: uuid.UUID | None = None,
 ) -> Order:
     """
     Validate and price the order, then save it with snapshots of every name
@@ -83,6 +85,7 @@ def create_order(
         total=priced.total,
         currency=priced.currency,
         whatsapp_number=restaurant.whatsapp_number,
+        client_token=client_token,
     )
 
     order_items = OrderItem.objects.bulk_create(
@@ -119,6 +122,13 @@ def create_order(
     order.whatsapp_message = build_order_message(order)
     order.save(update_fields=["whatsapp_message", "updated_at"])
     return order
+
+
+def find_order_by_client_token(client_token: uuid.UUID | None) -> Order | None:
+    """The order already created for this checkout attempt, if any."""
+    if client_token is None:
+        return None
+    return Order.objects.prefetch_related("items__addons").filter(client_token=client_token).first()
 
 
 # ---------------------------------------------------------------------------

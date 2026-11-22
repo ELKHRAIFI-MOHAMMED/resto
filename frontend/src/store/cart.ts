@@ -27,11 +27,22 @@ export interface CartLine {
 
 export type NewCartLine = Omit<CartLine, 'key'>
 
+/** Fresh values from the backend quote for one line. */
+export type LineSync = Pick<
+  CartLine,
+  'key' | 'unitPriceCents' | 'name' | 'variantName' | 'addonNames'
+>
+
 interface CartState {
   lines: CartLine[]
+  /** Set when a quote changed a stored price; not persisted. */
+  pricesChanged: boolean
+  dismissPriceNotice: () => void
   addItem: (line: NewCartLine) => void
   setQuantity: (key: string, quantity: number) => void
   removeLine: (key: string) => void
+  /** Apply authoritative prices and names (in the current language) from a quote. */
+  syncLines: (updates: LineSync[]) => void
   clear: () => void
 }
 
@@ -50,6 +61,8 @@ export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
       lines: [],
+      pricesChanged: false,
+      dismissPriceNotice: () => set({ pricesChanged: false }),
       addItem: (input) =>
         set((state) => {
           const line = { ...input, specialInstructions: input.specialInstructions.trim() }
@@ -82,6 +95,29 @@ export const useCartStore = create<CartState>()(
         })),
       removeLine: (key) =>
         set((state) => ({ lines: state.lines.filter((item) => item.key !== key) })),
+      syncLines: (updates) =>
+        set((state) => {
+          const byKey = new Map(updates.map((update) => [update.key, update]))
+          let changed = false
+          let priceChanged = false
+          const lines = state.lines.map((line) => {
+            const update = byKey.get(line.key)
+            if (
+              !update ||
+              (update.unitPriceCents === line.unitPriceCents &&
+                update.name === line.name &&
+                update.variantName === line.variantName &&
+                update.addonNames.join('|') === line.addonNames.join('|'))
+            ) {
+              return line
+            }
+            changed = true
+            if (update.unitPriceCents !== line.unitPriceCents) priceChanged = true
+            return { ...line, ...update }
+          })
+          if (!changed) return state
+          return priceChanged ? { lines, pricesChanged: true } : { lines }
+        }),
       clear: () => set({ lines: [] }),
     }),
     {

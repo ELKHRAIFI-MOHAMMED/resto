@@ -9,11 +9,10 @@ zones, settings and orders from a private dashboard.
 Prices are in Moroccan dirhams (MAD). There is no online payment: orders are
 paid on delivery or pickup.
 
-> **Project status: Phase 3 (public frontend) complete.** The tested Django
-> API is in place, and so are the public site (homepage, menu, product pages)
-> and a saved cart, in French, Arabic (right-to-left) and English. Checkout
-> with the WhatsApp hand-off and the admin dashboard come next (see
-> [Roadmap](#roadmap)).
+> **Project status: Phase 4 (ordering) complete.** Customers can browse the
+> menu, fill a cart, check out and send their order on WhatsApp, in French,
+> Arabic (right-to-left) and English. The administration dashboard comes next
+> (see [Roadmap](#roadmap)).
 
 ---
 
@@ -22,7 +21,7 @@ paid on delivery or pickup.
 | Area | Highlights | Status |
 | --- | --- | --- |
 | Public site | Homepage, menu with category filters and search, product detail with variants and add-ons | ✅ |
-| Ordering | Server-side pricing and quotes, delivery zones, fees and minimums, order snapshots, WhatsApp message | API ✅ · cart ✅ · checkout UI in Phase 4 |
+| Ordering | Cart with server-checked totals, checkout with validation, delivery zones, fees and minimums, order snapshots, WhatsApp hand-off with retry | ✅ |
 | Administration | Dashboard stats, product/category/order management, delivery zones, restaurant settings, manual status workflow | API ✅ · UI in Phase 5 |
 | Multilingual | French (default), Arabic with full RTL layout, English; translated catalog content | ✅ |
 | API | REST, OpenAPI/Swagger docs, pagination, filtering, search, consistent error codes | ✅ |
@@ -55,7 +54,15 @@ Details: [docs/architecture.md](docs/architecture.md).
 
 ## Screenshots
 
-Screenshots of the full flow will be added once checkout is built (Phase 4).
+Taken from the running app with the demo data (`seed_demo`).
+
+| Homepage | Product | Checkout |
+| --- | --- | --- |
+| [![Homepage](docs/screenshots/home.jpg)](docs/screenshots/home.jpg) | [![Product page](docs/screenshots/product.jpg)](docs/screenshots/product.jpg) | [![Checkout](docs/screenshots/checkout.jpg)](docs/screenshots/checkout.jpg) |
+
+| WhatsApp hand-off | Menu (mobile) | Arabic, right-to-left (mobile) |
+| --- | --- | --- |
+| [![Order hand-off](docs/screenshots/order.jpg)](docs/screenshots/order.jpg) | [![Menu on mobile](docs/screenshots/menu-mobile.jpg)](docs/screenshots/menu-mobile.jpg) | [![Arabic homepage on mobile](docs/screenshots/home-ar-mobile.jpg)](docs/screenshots/home-ar-mobile.jpg) |
 
 ## Design
 
@@ -170,6 +177,7 @@ All variables live in the root `.env` (template: [.env.example](.env.example)).
 | `THROTTLE_ANON`, `THROTTLE_ORDERS`, `THROTTLE_LOGIN` | Django | Rate limits (defaults `120/minute`, `10/minute`, `5/minute`) |
 | `MAX_IMAGE_UPLOAD_SIZE` | Django | Maximum upload size in bytes (default 5 MB) |
 | `DATABASE_URL` | Django | Optional; overrides the `POSTGRES_*` values |
+| `DB_CONN_MAX_AGE` | Django | Seconds to keep database connections open: 60 in production, 0 in development (the dev server uses a new thread, hence a new connection, per request) |
 | `VITE_API_BASE_URL` | Frontend | API base path or URL (default `/api`) |
 | `VITE_DEV_API_PROXY_TARGET` | Vite dev server | Django address for the dev proxy |
 
@@ -219,7 +227,7 @@ restoflow/
 1. ✅ **Foundation:** project structure, Django and React configuration, PostgreSQL, tooling, docs
 2. ✅ **Backend:** models and migrations, serializers, public and admin APIs, authentication, tests
 3. ✅ **Frontend:** design system, homepage, menu, product detail, cart store, i18n content
-4. **Ordering:** cart, checkout, server-side price validation, order creation, WhatsApp hand-off
+4. ✅ **Ordering:** cart, checkout, server-side price validation, order creation, WhatsApp hand-off
 5. **Admin:** login, dashboard, product, category, order and settings management
 6. **Quality:** full test pass, security hardening, performance, documentation
 7. **Deployment:** production settings, static and media files, build, deployment guide

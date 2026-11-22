@@ -67,7 +67,7 @@ class PricedItem:
 
 @dataclass
 class PricedOrder:
-    order_type: str
+    order_type: str | None
     items: list[PricedItem]
     subtotal: Decimal
     delivery_fee: Decimal
@@ -160,7 +160,7 @@ def _price_item(index: int, request: ItemRequest, product: Product | None, error
     )
 
 
-def ensure_ordering_available(restaurant: Restaurant, order_type: str) -> None:
+def ensure_ordering_available(restaurant: Restaurant, order_type: str | None) -> None:
     if not restaurant.is_accepting_orders:
         raise OrderingUnavailableError(
             "ordering_closed", _("The restaurant is not accepting orders at the moment.")
@@ -169,6 +169,8 @@ def ensure_ordering_available(restaurant: Restaurant, order_type: str) -> None:
         raise OrderingUnavailableError(
             "whatsapp_not_configured", _("Online ordering is not configured yet.")
         )
+    if order_type is None:
+        return  # cart quote: the order type is chosen later, at checkout
     enabled = {
         OrderType.DELIVERY: restaurant.delivery_enabled,
         OrderType.PICKUP: restaurant.pickup_enabled,
@@ -183,11 +185,15 @@ def ensure_ordering_available(restaurant: Restaurant, order_type: str) -> None:
 
 def price_order(
     *,
-    order_type: str,
+    order_type: str | None,
     items: list[ItemRequest],
     delivery_zone_id: int | None = None,
     restaurant: Restaurant | None = None,
 ) -> PricedOrder:
+    """
+    Price an order. Without `order_type` (the cart page), only the items are
+    validated and priced; delivery rules apply once a type is chosen.
+    """
     restaurant = restaurant or Restaurant.load()
     ensure_ordering_available(restaurant, order_type)
 

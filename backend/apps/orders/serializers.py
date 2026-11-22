@@ -46,7 +46,7 @@ class OrderItemInputSerializer(serializers.Serializer):
 
 
 class OrderQuoteInputSerializer(serializers.Serializer):
-    order_type = serializers.ChoiceField(choices=OrderType.choices)
+    order_type = serializers.ChoiceField(choices=OrderType.choices, required=False, allow_null=True)
     delivery_zone = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     items = OrderItemInputSerializer(
         many=True, allow_empty=False, max_length=settings.ORDER_MAX_LINES
@@ -58,6 +58,8 @@ class OrderQuoteInputSerializer(serializers.Serializer):
 
 
 class OrderCreateInputSerializer(OrderQuoteInputSerializer):
+    order_type = serializers.ChoiceField(choices=OrderType.choices)
+    client_token = serializers.UUIDField(required=False, allow_null=True)
     customer_name = serializers.CharField(min_length=2, max_length=120)
     customer_phone = serializers.CharField(max_length=30)
     delivery_address = serializers.CharField(
@@ -125,7 +127,7 @@ class PricedItemSerializer(serializers.Serializer):
 
 
 class OrderQuoteSerializer(serializers.Serializer):
-    order_type = serializers.CharField(read_only=True)
+    order_type = serializers.CharField(read_only=True, allow_null=True)
     items = PricedItemSerializer(many=True, read_only=True)
     subtotal = _money()
     delivery_fee = _money()
