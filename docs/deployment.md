@@ -197,6 +197,30 @@ the answer must be a `42501` permission error.
 - Migrations are not run by the deployment: run them as above before
   deploying code that needs them.
 
+## 8c. Vercel, backend and frontend as two projects
+
+| Vercel project | Root Directory | Configuration |
+| --- | --- | --- |
+| Backend (e.g. `resto-backend`) | `backend` | `backend/vercel.json`, `backend/api/index.py`: every path goes to Django |
+| Frontend (e.g. `resto-front`) | `frontend` | `frontend/vercel.json`: Vite build, `/api`, `/django-admin`, `/static`, `/sitemap.xml`, `/robots.txt` proxied to the backend |
+
+The frontend **proxies** the API instead of calling another domain: the
+browser only ever talks to the frontend's domain, so the session and CSRF
+cookies of the admin and courier apps keep working (cookies of another
+`*.vercel.app` site would be third-party cookies, blocked by browsers).
+
+The backend URL is written in `frontend/vercel.json`
+(`https://resto-backend.vercel.app`): replace it if the backend project gets
+another domain. Backend environment variables: as in 8b, plus
+
+| Variable | Value |
+| --- | --- |
+| `CSRF_TRUSTED_ORIGINS` | `https://<frontend domain>` (requests arrive with the frontend's Origin) |
+| `DJANGO_ALLOWED_HOSTS` | `<backend domain>,<frontend domain>` |
+| `PUBLIC_SITE_URL` | `https://<frontend domain>` (absolute URLs in the sitemap) |
+
+The frontend project needs no environment variable.
+
 ## 9. Pre-launch checklist
 
 - [ ] `.env.production` filled, no placeholder left; file not committed

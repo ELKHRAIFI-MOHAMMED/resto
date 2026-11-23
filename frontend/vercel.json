@@ -1,0 +1,37 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/:path(.*)", "destination": "https://resto-backend.vercel.app/api/:path" },
+    {
+      "source": "/django-admin/:path(.*)",
+      "destination": "https://resto-backend.vercel.app/django-admin/:path"
+    },
+    {
+      "source": "/static/:path(.*)",
+      "destination": "https://resto-backend.vercel.app/static/:path"
+    },
+    { "source": "/sitemap.xml", "destination": "https://resto-backend.vercel.app/sitemap.xml" },
+    { "source": "/robots.txt", "destination": "https://resto-backend.vercel.app/robots.txt" },
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), payment=()"
+        },
+        { "key": "Strict-Transport-Security", "value": "max-age=2592000; includeSubDomains" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
+}
