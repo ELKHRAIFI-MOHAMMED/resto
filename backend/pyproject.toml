@@ -3,6 +3,19 @@ name = "restoflow-backend"
 version = "0.1.0"
 description = "Django REST API for the RestoFlow restaurant ordering platform"
 requires-python = ">=3.12"
+# Same as requirements.txt (hosting platforms may read either one).
+dependencies = [
+    "Django>=5.2.19,<5.3",
+    "djangorestframework>=3.18,<3.19",
+    "django-filter>=26.2,<27",
+    "drf-spectacular>=0.30,<0.31",
+    "django-cors-headers>=4.9,<5",
+    "django-environ>=0.14,<0.15",
+    "psycopg[binary]>=3.3,<3.4",
+    "Pillow>=12.0,<14",
+    "gunicorn>=27.0,<28",
+    "whitenoise>=6.12,<7",
+]
 
 [tool.ruff]
 line-length = 100
