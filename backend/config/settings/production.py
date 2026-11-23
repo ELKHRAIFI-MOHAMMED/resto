@@ -8,13 +8,19 @@ Production settings (Gunicorn behind nginx, see docs/deployment.md).
 
 from django.core.exceptions import ImproperlyConfigured
 
+from config.secret_key import secret_key_problem
+
 from .base import *  # noqa: F403
 from .base import ALLOWED_HOSTS, DJANGO_ADMIN_URL, MIDDLEWARE, SECRET_KEY, env
 
 DEBUG = False
 
-if SECRET_KEY.startswith("change-me") or len(SECRET_KEY) < 50:
-    raise ImproperlyConfigured("DJANGO_SECRET_KEY must be a long, random, secret value.")
+
+if problem := secret_key_problem(SECRET_KEY):
+    raise ImproperlyConfigured(
+        f"DJANGO_SECRET_KEY must be a long, random, secret value: {problem}. "
+        'Generate one with: python -c "import secrets; print(secrets.token_urlsafe(64))"'
+    )
 if not ALLOWED_HOSTS:
     raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must be set in production.")
 # nginx forwards only /django-admin/ to Django: a private admin path must live under it.

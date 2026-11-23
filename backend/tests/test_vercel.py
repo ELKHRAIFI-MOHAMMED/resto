@@ -11,6 +11,7 @@ from apps.core import storage as storage_module
 from apps.core.storage import SupabaseStorage
 from apps.core.supabase import secure_supabase_tables
 from config.database_url import database_from_url
+from config.secret_key import secret_key_problem
 
 POOLER = "aws-1-us-east-1.pooler.supabase.com"
 
@@ -166,3 +167,24 @@ def test_other_startup_failures_stay_generic(monkeypatch):
     assert status.startswith("503")
     assert "RuntimeError" in body
     assert "hunter2" not in body
+
+
+@pytest.mark.parametrize(
+    ("key", "problem"),
+    [
+        ("", "empty"),
+        ("short-key", "9 characters long"),
+        ("change-me-" + "x" * 60, "example value"),
+        ('"' + "x" * 60 + '"', "quotes"),
+        ("x" * 60 + "\n", "spaces or a line break"),
+        ("x" * 60, None),
+    ],
+)
+def test_secret_key_problems_are_explained_without_the_key(key, problem):
+    message = secret_key_problem(key)
+
+    if problem is None:
+        assert message is None
+    else:
+        assert problem in message
+        assert "x" * 10 not in message
