@@ -5,6 +5,8 @@ import {
   catalogKeys,
   getCategories,
   getDeliveryZones,
+  getOffer,
+  getOffers,
   getOpeningHours,
   getProduct,
   getProducts,
@@ -49,6 +51,22 @@ export function useProduct(slug: string) {
   return useQuery({
     queryKey: catalogKeys.product(language, slug),
     queryFn: ({ signal }) => getProduct(slug, signal),
+  })
+}
+
+export function useOffers() {
+  const language = useLanguage()
+  return useQuery({
+    queryKey: catalogKeys.offers(language),
+    queryFn: ({ signal }) => getOffers(signal),
+  })
+}
+
+export function useOffer(slug: string) {
+  const language = useLanguage()
+  return useQuery({
+    queryKey: catalogKeys.offer(language, slug),
+    queryFn: ({ signal }) => getOffer(slug, signal),
   })
 }
 

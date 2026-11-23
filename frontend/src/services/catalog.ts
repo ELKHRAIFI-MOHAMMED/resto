@@ -4,6 +4,7 @@ import type { Paginated } from '@/types/api'
 import type {
   Category,
   DeliveryZone,
+  Offer,
   OpeningHour,
   ProductDetail,
   ProductFilters,
@@ -23,6 +24,8 @@ export const catalogKeys = {
     ['products', language, filters] as const,
   product: (language: Language, slug: string) => ['product', language, slug] as const,
   zones: (language: Language) => ['delivery-zones', language] as const,
+  offers: (language: Language) => ['offers', language] as const,
+  offer: (language: Language, slug: string) => ['offer', language, slug] as const,
 }
 
 export function getRestaurant(signal?: AbortSignal) {
@@ -43,6 +46,14 @@ export function getDeliveryZones(signal?: AbortSignal) {
 
 export function getProduct(slug: string, signal?: AbortSignal) {
   return apiFetch<ProductDetail>(`/products/${encodeURIComponent(slug)}/`, { signal })
+}
+
+export function getOffers(signal?: AbortSignal) {
+  return apiFetch<Offer[]>('/offers/', { signal })
+}
+
+export function getOffer(slug: string, signal?: AbortSignal) {
+  return apiFetch<Offer>(`/offers/${encodeURIComponent(slug)}/`, { signal })
 }
 
 const PAGE_SIZE = 100

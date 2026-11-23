@@ -113,6 +113,7 @@ class AdminRestaurantSerializer(serializers.ModelSerializer):
             "is_accepting_orders",
             "delivery_enabled",
             "pickup_enabled",
+            "auto_assign_couriers",
             "minimum_order_amount",
             "free_delivery_threshold",
             "updated_at",

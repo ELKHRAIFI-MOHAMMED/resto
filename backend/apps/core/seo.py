@@ -11,6 +11,7 @@ from django.views.decorators.cache import cache_control
 from django.views.decorators.http import require_GET
 
 from apps.core.i18n import LANGUAGE_CODES
+from apps.offers.models import Offer
 from apps.products.models import Product
 
 PRIVATE_PATHS = ["/admin", "/cart", "/checkout", "/order/", "/api/", "/django-admin/"]
@@ -49,6 +50,8 @@ def sitemap_xml(request):
     )
     entries = [_url_entry("/"), _url_entry("/menu")]
     entries += [_url_entry(f"/menu/{product.slug}", product.updated_at) for product in products]
+    offers = Offer.objects.current().only("slug", "updated_at").order_by("display_order", "id")
+    entries += [_url_entry(f"/offres/{offer.slug}", offer.updated_at) for offer in offers]
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '

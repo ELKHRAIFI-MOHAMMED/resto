@@ -2,12 +2,30 @@
 
 export type OrderType = 'delivery' | 'pickup'
 
-export interface OrderItemInput {
+export interface ProductItemInput {
   product: number
   variant: number | null
   addons: number[]
   quantity: number
   special_instructions: string
+}
+
+export interface OfferItemInput {
+  offer: number
+  /** Product ids picked in each group (repeated when picked several times). */
+  choices: { group: number; products: number[] }[]
+  quantity: number
+  special_instructions: string
+}
+
+export type OrderItemInput = ProductItemInput | OfferItemInput
+
+/** A dish picked in an offer, as priced or saved by the backend. */
+export interface OfferChoice {
+  group_name: string
+  product: number | null
+  product_name: string
+  quantity: number
 }
 
 export interface QuoteRequest {
@@ -33,7 +51,9 @@ export interface PricedAddon {
 }
 
 export interface PricedItem {
-  product: number
+  product: number | null
+  offer: number | null
+  choices: (OfferChoice & { group: number })[]
   product_name: string
   product_price: string
   variant: number | null
@@ -61,6 +81,8 @@ export interface Quote {
 export interface OrderItemSnapshot {
   id: number
   product: number | null
+  offer: number | null
+  choices: (OfferChoice & { id: number })[]
   product_name: string
   variant_name: string
   addons: { id: number; addon: number | null; addon_name: string; addon_price: string }[]
@@ -99,5 +121,8 @@ export interface ItemIssue {
     | 'variant_required'
     | 'variant_invalid'
     | 'addon_invalid'
+    | 'offer_not_found'
+    | 'offer_choices_invalid'
+    | 'offer_choice_unavailable'
   message: string
 }

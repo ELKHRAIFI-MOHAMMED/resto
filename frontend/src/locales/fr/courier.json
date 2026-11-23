@@ -1,0 +1,36 @@
+{
+  "courier": {
+    "title": "Espace livreur",
+    "active": "À livrer",
+    "done": "Livrées",
+    "onDuty": "En service",
+    "offDuty": "Hors service",
+    "dutyHint": "En service, vous recevez les commandes de vos quartiers : {{zones}}.",
+    "noZones": "Aucun quartier ne vous est attribué pour l’instant.",
+    "empty": "Aucune livraison pour le moment.",
+    "emptyDone": "Aucune livraison terminée.",
+    "refresh": "Mise à jour automatique toutes les 20 secondes.",
+    "toCollect": "À encaisser",
+    "items_one": "{{count}} article",
+    "items_other": "{{count}} articles",
+    "call": "Appeler",
+    "whatsapp": "WhatsApp",
+    "directions": "Itinéraire",
+    "pickup": "J’ai récupéré la commande",
+    "deliver": "Commande livrée",
+    "deliverConfirm": "Confirmer la livraison de {{reference}} ? Le montant de {{amount}} a-t-il été encaissé ?",
+    "pickedUp": "Commande en route",
+    "delivered": "Livraison terminée",
+    "notes": "Remarques du client",
+    "back": "Mes livraisons",
+    "notCourier": "Ce compte n’est pas un compte livreur.",
+    "toAdmin": "Aller à l’administration",
+    "status": {
+      "confirmed": "À récupérer",
+      "preparing": "En préparation",
+      "out_for_delivery": "En route",
+      "completed": "Livrée"
+    },
+    "error": "L’opération a échoué. Réessayez."
+  }
+}

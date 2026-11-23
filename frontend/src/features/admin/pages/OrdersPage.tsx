@@ -30,6 +30,7 @@ export function OrdersPage() {
   const filters = {
     status: params.get('status') ?? '',
     order_type: params.get('order_type') ?? '',
+    unassigned: params.get('unassigned') ?? '',
     date_from: params.get('date_from') ?? '',
     date_to: params.get('date_to') ?? '',
   }
@@ -102,6 +103,15 @@ export function OrdersPage() {
           onChange={(event) => setFilter('date_to', event.target.value)}
         />
       </div>
+      <label className="mb-6 flex w-fit cursor-pointer items-center gap-3 text-sm">
+        <input
+          type="checkbox"
+          checked={filters.unassigned === 'true'}
+          onChange={(event) => setFilter('unassigned', event.target.checked ? 'true' : '')}
+          className="size-4 accent-[var(--color-accent)]"
+        />
+        {t('admin.orders.unassignedFilter')}
+      </label>
 
       {isPending ? (
         <Skeleton className="h-64" />
@@ -122,6 +132,7 @@ export function OrdersPage() {
                   <th className={TH}>{t('admin.orders.customer')}</th>
                   <th className={TH}>{t('admin.orders.type')}</th>
                   <th className={TH}>{t('admin.orders.total')}</th>
+                  <th className={TH}>{t('admin.orders.courier')}</th>
                   <th className={TH}>{t('admin.orders.status')}</th>
                 </tr>
               </thead>
@@ -156,13 +167,22 @@ export function OrdersPage() {
                       <Money cents={parseMoney(order.total)} />
                     </td>
                     <td className={TD}>
+                      {order.order_type === 'pickup' ? (
+                        <span className="text-muted">-</span>
+                      ) : (
+                        (order.courier_name ?? (
+                          <span className="text-accent">{t('admin.orders.unassigned')}</span>
+                        ))
+                      )}
+                    </td>
+                    <td className={TD}>
                       <StatusBadge status={order.status} />
                     </td>
                   </tr>
                 ))}
                 {data.results.length === 0 && (
                   <tr>
-                    <td colSpan={6} className={cx(TD, 'text-center text-muted')}>
+                    <td colSpan={7} className={cx(TD, 'text-center text-muted')}>
                       {t('admin.common.empty')}
                     </td>
                   </tr>

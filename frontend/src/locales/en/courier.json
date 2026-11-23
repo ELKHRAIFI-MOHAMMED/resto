@@ -1,0 +1,36 @@
+{
+  "courier": {
+    "title": "Courier",
+    "active": "To deliver",
+    "done": "Delivered",
+    "onDuty": "On duty",
+    "offDuty": "Off duty",
+    "dutyHint": "On duty, you receive the orders of your neighbourhoods: {{zones}}.",
+    "noZones": "No neighbourhood is assigned to you yet.",
+    "empty": "No delivery right now.",
+    "emptyDone": "No completed delivery yet.",
+    "refresh": "Refreshes automatically every 20 seconds.",
+    "toCollect": "To collect",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items",
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "directions": "Directions",
+    "pickup": "I have the order",
+    "deliver": "Order delivered",
+    "deliverConfirm": "Confirm delivery of {{reference}}? Has {{amount}} been collected?",
+    "pickedUp": "Order on its way",
+    "delivered": "Delivery completed",
+    "notes": "Customer notes",
+    "back": "My deliveries",
+    "notCourier": "This account is not a courier account.",
+    "toAdmin": "Go to administration",
+    "status": {
+      "confirmed": "To pick up",
+      "preparing": "Being prepared",
+      "out_for_delivery": "On the way",
+      "completed": "Delivered"
+    },
+    "error": "The action failed. Try again."
+  }
+}

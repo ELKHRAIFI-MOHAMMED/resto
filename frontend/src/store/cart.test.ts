@@ -85,6 +85,74 @@ describe('cart store', () => {
     expect(state().lines).toEqual([])
   })
 
+  it('replaces an edited line in place', () => {
+    state().addItem(line())
+    state().addItem(line({ productId: 20 }))
+    state().replaceLine(
+      lineKey(),
+      line({
+        variantId: 101,
+        variantName: 'XL',
+        addonIds: [200],
+        quantity: 3,
+        specialInstructions: ' sans oignons ',
+      }),
+    )
+
+    expect(state().lines).toHaveLength(2)
+    expect(state().lines[0]).toMatchObject({
+      variantName: 'XL',
+      addonIds: [200],
+      quantity: 3,
+      specialInstructions: 'sans oignons',
+      key: cartLineKey(
+        line({ variantId: 101, addonIds: [200], specialInstructions: 'sans oignons' }),
+      ),
+    })
+    expect(state().lines[1]?.productId).toBe(20)
+  })
+
+  it('merges an edited line into an identical one', () => {
+    state().addItem(line({ quantity: 2 }))
+    state().addItem(line({ variantId: 101, variantName: 'XL', quantity: 1 }))
+    state().replaceLine(lineKey(1), line({ quantity: 1 }))
+
+    expect(state().lines).toHaveLength(1)
+    expect(state().lines[0]).toMatchObject({ variantId: 100, quantity: 3 })
+  })
+
+  it('ignores edits of a line that no longer exists', () => {
+    state().addItem(line())
+    state().replaceLine('missing', line({ productId: 99 }))
+    expect(state().lines).toHaveLength(1)
+    expect(state().lines[0]?.productId).toBe(10)
+  })
+
+  it('keys offer lines by offer, picks and notes', () => {
+    const offer = (picks: number[][], notes = '') =>
+      line({
+        productId: null,
+        offerId: 7,
+        variantId: null,
+        specialInstructions: notes,
+        choices: picks.map((ids, index) => ({
+          groupId: index + 1,
+          groupName: `G${index + 1}`,
+          picks: ids.map((productId) => ({ productId, name: String(productId), quantity: 1 })),
+        })),
+      })
+
+    expect(cartLineKey(offer([[2, 1], [3]]))).toBe(cartLineKey(offer([[1, 2], [3]])))
+    expect(cartLineKey(offer([[1, 1], [3]]))).not.toBe(cartLineKey(offer([[1, 2], [3]])))
+    expect(cartLineKey(offer([[1, 2], [3]], 'x'))).not.toBe(cartLineKey(offer([[1, 2], [3]])))
+    expect(cartLineKey(offer([[10]]))).not.toBe(cartLineKey(line({ productId: 10 })))
+
+    state().addItem(offer([[1, 2], [3]]))
+    state().addItem(offer([[2, 1], [3]]))
+    expect(state().lines).toHaveLength(1)
+    expect(state().lines[0]?.quantity).toBe(2)
+  })
+
   it('persists to localStorage', () => {
     state().addItem(line())
 

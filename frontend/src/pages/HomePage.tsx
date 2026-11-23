@@ -8,6 +8,7 @@ import { Hero } from '@/features/home/Hero'
 import { HowToOrder } from '@/features/home/HowToOrder'
 import { MenuBoard } from '@/features/home/MenuBoard'
 import { VisitUs } from '@/features/home/VisitUs'
+import { OffersSection } from '@/features/offers/OffersSection'
 import { useOpeningHours, useRestaurant } from '@/hooks/useCatalog'
 import { restaurantStructuredData } from '@/lib/structuredData'
 
@@ -39,6 +40,7 @@ export function HomePage() {
       )}
 
       <Hero />
+      <OffersSection className="mx-auto w-full max-w-6xl px-4 pt-16 sm:px-6" />
       <FeaturedDishes />
       <MenuBoard />
       <HowToOrder />

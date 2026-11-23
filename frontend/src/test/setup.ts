@@ -11,7 +11,7 @@ import { useToastStore } from '@/store/toast'
 
 // Tests run in parallel; under load, debounced quotes and lazy routes can
 // take longer than the 1 s default to appear.
-configure({ asyncUtilTimeout: 3000 })
+configure({ asyncUtilTimeout: 5000 })
 
 afterEach(async () => {
   cleanup()

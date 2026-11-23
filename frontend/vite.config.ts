@@ -35,6 +35,10 @@ export default defineConfig(({ mode }) => {
       css: false,
       restoreMocks: true,
       unstubGlobals: true,
+      // jsdom suites are CPU-heavy: leave room for the rest of the machine
+      // (dev servers, Docker) so timings stay stable.
+      maxWorkers: '50%',
+      testTimeout: 20_000,
     },
   }
 })

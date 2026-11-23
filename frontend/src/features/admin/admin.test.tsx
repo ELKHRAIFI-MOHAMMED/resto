@@ -14,6 +14,7 @@ const owner: StaffUser = {
   last_name: '',
   role: 'owner',
   is_owner: true,
+  is_courier: false,
 }
 const manager: StaffUser = {
   ...owner,
@@ -67,6 +68,8 @@ const order: AdminOrderDetail = {
     {
       id: 1,
       product: 3,
+      offer: null,
+      choices: [],
       product_name: 'Tacos Poulet',
       product_price: '45.00',
       variant_name: 'L',
@@ -87,6 +90,12 @@ const order: AdminOrderDetail = {
   created_at: '2026-11-22T18:00:00Z',
   updated_at: '2026-11-22T18:00:00Z',
   confirmed_at: null,
+  courier: null,
+  courier_name: null,
+  courier_phone: null,
+  assigned_at: null,
+  picked_up_at: null,
+  delivered_at: null,
 }
 
 const page = <T,>(results: T[]) => ({ count: results.length, next: null, previous: null, results })
@@ -262,6 +271,80 @@ describe('products', () => {
       addons: [5],
       is_active: true,
     })
+  })
+})
+
+describe('offers', () => {
+  it('creates an offer with its rules: dishes to pick in each group', async () => {
+    const user = userEvent.setup()
+    const offerCalls: MockRequest[] = []
+    mockAdmin(owner, {
+      '/admin/products/': page([
+        { id: 10, category: 1, name_fr: 'Double Cheese', is_active: true },
+        { id: 11, category: 1, name_fr: 'Chicken Crispy', is_active: true },
+      ]),
+      '/admin/offers/': (request: MockRequest) => {
+        offerCalls.push(request)
+        return request.method === 'POST' ? { id: 3, ...(request.body as object) } : []
+      },
+      '/admin/offers/3/': { id: 3, name_fr: 'Offre Famille', groups: [], updated_at: 'x' },
+    })
+    renderRoutes(routes, '/admin/offers/new')
+
+    await screen.findByRole('checkbox', { name: 'Double Cheese' })
+    await user.type(screen.getByLabelText('Nom (Français)'), 'Offre Famille')
+    await user.type(screen.getByLabelText(/Prix de l’offre/), '500')
+    await user.type(screen.getByLabelText('Nom du groupe (Français)'), 'Plats')
+    const quantity = screen.getByLabelText(/Nombre de plats à choisir/)
+    await user.clear(quantity)
+    await user.type(quantity, '3')
+
+    // A group without dishes is refused before anything is sent
+    await user.click(screen.getByRole('button', { name: 'Créer' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('au moins un plat coché')
+    expect(offerCalls.filter((call) => call.method === 'POST')).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: 'Tout cocher : Burgers' }))
+    await user.click(screen.getByRole('button', { name: 'Créer' }))
+
+    await waitFor(() =>
+      expect(offerCalls.find((call) => call.method === 'POST')?.body).toMatchObject({
+        name_fr: 'Offre Famille',
+        price: '500',
+        starts_on: null,
+        ends_on: null,
+        is_active: true,
+        groups: [{ name_fr: 'Plats', quantity: 3, products: [10, 11], display_order: 0 }],
+      }),
+    )
+  })
+
+  it('lists offers with their rules and period', async () => {
+    mockAdmin(manager, {
+      '/admin/offers/': [
+        {
+          id: 3,
+          name_fr: 'Offre Famille',
+          price: '500.00',
+          image: null,
+          is_active: true,
+          starts_on: null,
+          ends_on: '2026-12-31',
+          groups: [
+            { name_fr: 'Plats', quantity: 3, products: [10] },
+            { name_fr: 'Desserts', quantity: 3, products: [12] },
+          ],
+        },
+      ],
+    })
+    renderRoutes(routes, '/admin/offers')
+
+    expect(await screen.findByRole('link', { name: /Offre Famille/ })).toHaveAttribute(
+      'href',
+      '/admin/offers/3',
+    )
+    expect(screen.getByText('3 × Plats · 3 × Desserts')).toBeInTheDocument()
+    expect(screen.getByText('Jusqu’au 2026-12-31')).toBeInTheDocument()
   })
 })
 

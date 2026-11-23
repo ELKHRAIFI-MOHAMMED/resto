@@ -19,6 +19,10 @@ export const routes: RouteObject[] = [
         path: 'menu/:slug',
         lazy: async () => ({ Component: (await import('@/pages/ProductPage')).ProductPage }),
       },
+      {
+        path: 'offres/:slug',
+        lazy: async () => ({ Component: (await import('@/pages/OfferPage')).OfferPage }),
+      },
       { path: 'cart', element: <CartPage /> },
       {
         path: 'checkout',
@@ -35,6 +39,11 @@ export const routes: RouteObject[] = [
     // The dashboard is its own chunk: public visitors never download it.
     path: 'admin/*',
     lazy: async () => ({ Component: (await import('@/features/admin/AdminApp')).AdminApp }),
+  },
+  {
+    // The couriers' delivery app, also its own chunk.
+    path: 'livreur/*',
+    lazy: async () => ({ Component: (await import('@/features/courier/CourierApp')).CourierApp }),
   },
 ]
 

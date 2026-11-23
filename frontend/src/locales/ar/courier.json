@@ -1,0 +1,40 @@
+{
+  "courier": {
+    "title": "فضاء عامل التوصيل",
+    "active": "للتوصيل",
+    "done": "تم التسليم",
+    "onDuty": "في الخدمة",
+    "offDuty": "خارج الخدمة",
+    "dutyHint": "في الخدمة، تتوصل بطلبات أحيائك: {{zones}}.",
+    "noZones": "لم يُسند إليك أي حي بعد.",
+    "empty": "لا توجد توصيلات حاليًا.",
+    "emptyDone": "لا توجد توصيلات منتهية.",
+    "refresh": "تحديث تلقائي كل 20 ثانية.",
+    "toCollect": "المبلغ للتحصيل",
+    "items_zero": "لا منتجات",
+    "items_one": "منتج واحد",
+    "items_two": "منتجان",
+    "items_few": "{{count}} منتجات",
+    "items_many": "{{count}} منتجًا",
+    "items_other": "{{count}} منتج",
+    "call": "اتصال",
+    "whatsapp": "واتساب",
+    "directions": "الطريق",
+    "pickup": "استلمت الطلب",
+    "deliver": "تم التسليم",
+    "deliverConfirm": "تأكيد تسليم {{reference}}؟ هل تم تحصيل مبلغ {{amount}}؟",
+    "pickedUp": "الطلب في الطريق",
+    "delivered": "انتهى التوصيل",
+    "notes": "ملاحظات الزبون",
+    "back": "توصيلاتي",
+    "notCourier": "هذا الحساب ليس حساب عامل توصيل.",
+    "toAdmin": "الذهاب إلى الإدارة",
+    "status": {
+      "confirmed": "للاستلام",
+      "preparing": "قيد التحضير",
+      "out_for_delivery": "في الطريق",
+      "completed": "تم التسليم"
+    },
+    "error": "فشلت العملية. أعد المحاولة."
+  }
+}

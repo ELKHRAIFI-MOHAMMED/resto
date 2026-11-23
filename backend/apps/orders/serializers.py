@@ -4,8 +4,9 @@ from rest_framework import serializers
 
 from apps.core.money import MONEY_FIELD_KWARGS
 from apps.core.phone import normalize_customer_phone
+from apps.delivery.models import Courier
 
-from .models import Order, OrderItem, OrderItemAddon, OrderStatus, OrderType
+from .models import Order, OrderItem, OrderItemAddon, OrderItemChoice, OrderStatus, OrderType
 from .pricing import ItemRequest
 from .services import CustomerDetails, allowed_next_statuses
 
@@ -19,8 +20,19 @@ def _money(**kwargs) -> serializers.DecimalField:
 # ---------------------------------------------------------------------------
 
 
+class OfferChoiceInputSerializer(serializers.Serializer):
+    group = serializers.IntegerField(min_value=1)
+    products = serializers.ListField(
+        child=serializers.IntegerField(min_value=1), allow_empty=False, max_length=20
+    )
+
+
 class OrderItemInputSerializer(serializers.Serializer):
-    product = serializers.IntegerField(min_value=1)
+    """Either a product (with its options) or an offer (with the dishes picked)."""
+
+    product = serializers.IntegerField(min_value=1, required=False, allow_null=True)
+    offer = serializers.IntegerField(min_value=1, required=False, allow_null=True)
+    choices = OfferChoiceInputSerializer(many=True, required=False, default=list, max_length=10)
     variant = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     addons = serializers.ListField(
         child=serializers.IntegerField(min_value=1), required=False, default=list, max_length=20
@@ -35,13 +47,33 @@ class OrderItemInputSerializer(serializers.Serializer):
             raise serializers.ValidationError(_("An extra can only be selected once."))
         return value
 
+    def validate(self, attrs):
+        is_offer = attrs.get("offer") is not None
+        if is_offer == (attrs.get("product") is not None):
+            raise serializers.ValidationError(
+                _("Each item needs either a product or an offer."), code="item_kind"
+            )
+        if is_offer and (attrs.get("variant") or attrs.get("addons")):
+            raise serializers.ValidationError(
+                _("Options cannot be added to an offer."), code="offer_options"
+            )
+        if not is_offer and attrs.get("choices"):
+            raise serializers.ValidationError(
+                _("Choices only apply to offers."), code="offer_choices"
+            )
+        return attrs
+
     def to_item_request(self, data) -> ItemRequest:
         return ItemRequest(
-            product_id=data["product"],
+            product_id=data.get("product"),
             quantity=data["quantity"],
             variant_id=data.get("variant"),
             addon_ids=tuple(data.get("addons", ())),
             special_instructions=data.get("special_instructions", ""),
+            offer_id=data.get("offer"),
+            choices=tuple(
+                (choice["group"], tuple(choice["products"])) for choice in data.get("choices", ())
+            ),
         )
 
 
@@ -111,8 +143,22 @@ class PricedAddonSerializer(serializers.Serializer):
     price = _money()
 
 
-class PricedItemSerializer(serializers.Serializer):
+class PricedChoiceSerializer(serializers.Serializer):
+    group = serializers.IntegerField(source="group.pk", read_only=True)
+    group_name = serializers.CharField(read_only=True)
     product = serializers.IntegerField(source="product.pk", read_only=True)
+    product_name = serializers.CharField(read_only=True)
+    quantity = serializers.IntegerField(read_only=True)
+
+
+class PricedItemSerializer(serializers.Serializer):
+    product = serializers.IntegerField(
+        source="product.pk", read_only=True, allow_null=True, default=None
+    )
+    offer = serializers.IntegerField(
+        source="offer.pk", read_only=True, allow_null=True, default=None
+    )
+    choices = PricedChoiceSerializer(many=True, read_only=True)
     product_name = serializers.CharField(read_only=True)
     product_price = _money()
     variant = serializers.IntegerField(
@@ -153,19 +199,29 @@ class OrderItemAddonSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class OrderItemChoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItemChoice
+        fields = ["id", "group_name", "product", "product_name", "quantity"]
+        read_only_fields = fields
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
     addons = OrderItemAddonSerializer(many=True, read_only=True)
+    choices = OrderItemChoiceSerializer(many=True, read_only=True)
 
     class Meta:
         model = OrderItem
         fields = [
             "id",
             "product",
+            "offer",
             "product_name",
             "product_price",
             "variant_name",
             "variant_price",
             "addons",
+            "choices",
             "quantity",
             "unit_price",
             "line_total",
@@ -214,6 +270,9 @@ class OrderCreatedSerializer(serializers.ModelSerializer):
 
 class AdminOrderListSerializer(serializers.ModelSerializer):
     item_count = serializers.IntegerField(read_only=True)
+    courier_name = serializers.CharField(
+        source="courier.display_name", read_only=True, default=None
+    )
 
     class Meta:
         model = Order
@@ -231,6 +290,8 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
             "currency",
             "created_at",
             "confirmed_at",
+            "courier",
+            "courier_name",
         ]
         read_only_fields = fields
 
@@ -238,6 +299,10 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
 class AdminOrderDetailSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     allowed_statuses = serializers.SerializerMethodField()
+    courier_name = serializers.CharField(
+        source="courier.display_name", read_only=True, default=None
+    )
+    courier_phone = serializers.CharField(source="courier.phone", read_only=True, default=None)
 
     class Meta:
         model = Order
@@ -265,11 +330,63 @@ class AdminOrderDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "confirmed_at",
+            "courier",
+            "courier_name",
+            "courier_phone",
+            "assigned_at",
+            "picked_up_at",
+            "delivered_at",
         ]
         read_only_fields = fields
 
     def get_allowed_statuses(self, order: Order) -> list[str]:
         return allowed_next_statuses(order)
+
+
+class CourierAssignmentSerializer(serializers.Serializer):
+    courier = serializers.PrimaryKeyRelatedField(queryset=Courier.objects.all(), allow_null=True)
+
+
+class CourierOrderSerializer(serializers.ModelSerializer):
+    """What a courier needs to deliver: address, contact, contents, amount to collect."""
+
+    items = OrderItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            "id",
+            "reference",
+            "status",
+            "customer_name",
+            "customer_phone",
+            "delivery_address",
+            "city",
+            "delivery_zone_name",
+            "customer_notes",
+            "items",
+            "total",
+            "currency",
+            "created_at",
+            "assigned_at",
+            "picked_up_at",
+            "delivered_at",
+        ]
+        read_only_fields = fields
+
+
+class CourierProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email", read_only=True)
+    name = serializers.CharField(source="display_name", read_only=True)
+    zones = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Courier
+        fields = ["id", "email", "name", "phone", "is_on_duty", "zones"]
+        read_only_fields = ["id", "email", "name", "phone", "zones"]
+
+    def get_zones(self, courier) -> list[str]:
+        return [zone.name_fr for zone in courier.zones.all()]
 
 
 class OrderStatusUpdateSerializer(serializers.Serializer):

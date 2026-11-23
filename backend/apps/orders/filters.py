@@ -10,7 +10,17 @@ class AdminOrderFilter(django_filters.FilterSet):
     confirmed = django_filters.BooleanFilter(
         field_name="confirmed_at", lookup_expr="isnull", exclude=True
     )
+    unassigned = django_filters.BooleanFilter(field_name="courier", lookup_expr="isnull")
 
     class Meta:
         model = Order
-        fields = ["status", "order_type", "delivery_zone", "date_from", "date_to", "confirmed"]
+        fields = [
+            "status",
+            "order_type",
+            "delivery_zone",
+            "courier",
+            "unassigned",
+            "date_from",
+            "date_to",
+            "confirmed",
+        ]

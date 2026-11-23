@@ -13,8 +13,9 @@ export interface StaffUser {
   email: string
   first_name: string
   last_name: string
-  role: 'owner' | 'manager'
+  role: 'owner' | 'manager' | 'courier'
   is_owner: boolean
+  is_courier: boolean
 }
 
 export type OrderStatus =
@@ -44,6 +45,8 @@ export interface AdminOrderSummary {
   currency: string
   created_at: string
   confirmed_at: string | null
+  courier: number | null
+  courier_name: string | null
 }
 
 export interface AdminOrderDetail extends Omit<AdminOrderSummary, 'item_count'> {
@@ -55,6 +58,14 @@ export interface AdminOrderDetail extends Omit<AdminOrderSummary, 'item_count'> 
   items: {
     id: number
     product: number | null
+    offer: number | null
+    choices: {
+      id: number
+      group_name: string
+      product: number | null
+      product_name: string
+      quantity: number
+    }[]
     product_name: string
     product_price: string
     variant_name: string
@@ -70,6 +81,10 @@ export interface AdminOrderDetail extends Omit<AdminOrderSummary, 'item_count'> 
   whatsapp_number: string
   whatsapp_message: string
   updated_at: string
+  courier_phone: string | null
+  assigned_at: string | null
+  picked_up_at: string | null
+  delivered_at: string | null
 }
 
 export interface Dashboard {
@@ -146,6 +161,31 @@ export interface AdminProduct extends Translated {
   updated_at: string
 }
 
+export interface AdminOfferGroup extends Translated {
+  id?: number
+  /** Number of dishes the customer picks in this group. */
+  quantity: number
+  products: number[]
+  display_order?: number
+}
+
+export interface AdminOffer extends Translated {
+  id: number
+  slug: string
+  description_fr: string
+  description_ar: string
+  description_en: string
+  price: string
+  image: string | null
+  is_active: boolean
+  starts_on: string | null
+  ends_on: string | null
+  display_order: number
+  groups: AdminOfferGroup[]
+  created_at: string
+  updated_at: string
+}
+
 export interface AdminZone extends Translated {
   id: number
   delivery_fee: string
@@ -173,8 +213,23 @@ export interface AdminSettings {
   is_accepting_orders: boolean
   delivery_enabled: boolean
   pickup_enabled: boolean
+  auto_assign_couriers: boolean
   minimum_order_amount: string
   free_delivery_threshold: string | null
+}
+
+export interface AdminCourier {
+  id: number
+  email: string
+  first_name: string
+  last_name: string
+  phone: string
+  zones: number[]
+  is_on_duty: boolean
+  is_active: boolean
+  active_orders: number
+  last_assigned_at: string | null
+  created_at: string
 }
 
 export interface AdminOpeningHour {
@@ -241,6 +296,13 @@ export const ordersApi = {
       method: 'PATCH',
       body: { status },
     }),
+  assignCourier: (id: number, courier: number | null) =>
+    apiFetch<AdminOrderDetail>(`/admin/orders/${id}/courier/`, {
+      method: 'PATCH',
+      body: { courier },
+    }),
+  autoAssign: (id: number) =>
+    apiFetch<AdminOrderDetail>(`/admin/orders/${id}/auto-assign/`, { method: 'POST' }),
 }
 
 export const productsApi = {
@@ -273,6 +335,32 @@ export const productsApi = {
 
 export const addonsApi = resource<AdminAddon>('/admin/addons/')
 
+/** Every product (all pages), e.g. to choose the dishes of an offer. */
+export async function allProducts(): Promise<AdminProduct[]> {
+  const products: AdminProduct[] = []
+  for (let page = 1; page <= 20; page += 1) {
+    const data = await productsApi.list({ page, page_size: 100 })
+    products.push(...data.results)
+    if (!data.next) break
+  }
+  return products
+}
+
+type OfferInput = Partial<Omit<AdminOffer, 'id' | 'image' | 'created_at' | 'updated_at'>>
+
+export const offersApi = {
+  list: () => apiFetch<AdminOffer[]>('/admin/offers/'),
+  get: (id: number) => apiFetch<AdminOffer>(`/admin/offers/${id}/`),
+  create: (data: OfferInput) =>
+    apiFetch<AdminOffer>('/admin/offers/', { method: 'POST', body: data }),
+  update: (id: number, data: OfferInput) =>
+    apiFetch<AdminOffer>(`/admin/offers/${id}/`, { method: 'PATCH', body: data }),
+  remove: (id: number) => apiFetch<unknown>(`/admin/offers/${id}/`, { method: 'DELETE' }),
+  uploadImage: (id: number, file: File) => uploadImage(`/admin/offers/${id}/`, file),
+  clearImage: (id: number) =>
+    apiFetch<AdminOffer>(`/admin/offers/${id}/`, { method: 'PATCH', body: { image: null } }),
+}
+
 export const categoriesApi = {
   ...resource<AdminCategory>('/admin/categories/'),
   uploadImage: (id: number, file: File) => uploadImage(`/admin/categories/${id}/`, file),
@@ -283,6 +371,16 @@ export const categoriesApi = {
 }
 
 export const zonesApi = resource<AdminZone>('/admin/delivery/zones/')
+
+export const couriersApi = {
+  // Couriers are few: the endpoint returns the full list (no pagination).
+  list: () => apiFetch<AdminCourier[]>('/admin/couriers/'),
+  create: (data: Partial<AdminCourier> & { password?: string }) =>
+    apiFetch<AdminCourier>('/admin/couriers/', { method: 'POST', body: data }),
+  update: (id: number, data: Partial<AdminCourier> & { password?: string }) =>
+    apiFetch<AdminCourier>(`/admin/couriers/${id}/`, { method: 'PATCH', body: data }),
+  remove: (id: number) => apiFetch<unknown>(`/admin/couriers/${id}/`, { method: 'DELETE' }),
+}
 
 export const settingsApi = {
   get: () => apiFetch<AdminSettings>('/admin/settings/'),

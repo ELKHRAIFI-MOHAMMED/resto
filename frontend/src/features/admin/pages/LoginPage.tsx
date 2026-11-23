@@ -19,11 +19,17 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
 
   const from = (location.state as { from?: string } | null)?.from ?? '/admin/dashboard'
-  if (user) return <Navigate to={from} replace />
+  if (user) return <Navigate to={user.is_courier ? '/livreur' : from} replace />
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
-    login.mutate({ email, password }, { onSuccess: () => navigate(from, { replace: true }) })
+    login.mutate(
+      { email, password },
+      // Couriers land in their delivery app, staff in the dashboard.
+      {
+        onSuccess: (account) => navigate(account.is_courier ? '/livreur' : from, { replace: true }),
+      },
+    )
   }
 
   const error = login.error

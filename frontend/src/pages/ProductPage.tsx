@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 
 import { ArchImage } from '@/components/ArchImage'
 import { Price } from '@/components/Price'
@@ -11,6 +11,7 @@ import { ProductOptionsForm } from '@/features/products/ProductOptionsForm'
 import { useProduct } from '@/hooks/useCatalog'
 import { cx } from '@/lib/cx'
 import { ApiError } from '@/services/api'
+import { useCartStore } from '@/store/cart'
 import type { ProductDetail } from '@/types/catalog'
 
 export function ProductPage() {
@@ -51,6 +52,14 @@ function ProductView({ product }: { product: ProductDetail }) {
   )
   const [photoIndex, setPhotoIndex] = useState(0)
   const description = product.description || t('product.metaFallback', { name: product.name })
+  // `?edit=<line key>` opens the form on a cart line, to change its options.
+  const [searchParams] = useSearchParams()
+  const editKey = searchParams.get('edit')
+  const editing = useCartStore((state) =>
+    editKey
+      ? state.lines.find((line) => line.key === editKey && line.productId === product.id)
+      : undefined,
+  )
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pt-8 pb-24 sm:px-6 sm:pt-12">
@@ -114,7 +123,21 @@ function ProductView({ product }: { product: ProductDetail }) {
             <p className="mt-6 max-w-prose text-lg text-muted">{product.description}</p>
           )}
           <div className="mt-10">
-            <ProductOptionsForm product={product} />
+            {editing && (
+              <p
+                role="status"
+                className="mb-8 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-accent/40 px-4 py-3 text-sm"
+              >
+                {t('product.editing')}
+                <Link
+                  to="/cart"
+                  className="text-muted underline underline-offset-4 hover:text-foreground"
+                >
+                  {t('product.cancelEdit')}
+                </Link>
+              </p>
+            )}
+            <ProductOptionsForm key={editing?.key ?? 'new'} product={product} editing={editing} />
           </div>
         </div>
       </div>

@@ -9,6 +9,8 @@ zones, settings and orders from a private dashboard.
 Prices are in Moroccan dirhams (MAD). There is no online payment: orders are
 paid on delivery or pickup.
 
+> 🇫🇷 **Présentation de l'application (en français) : [PRESENTATION.md](PRESENTATION.md)**
+
 > **Project status: complete (all 7 phases).** Customers browse the menu,
 > order and send their order on WhatsApp; the team runs the restaurant from
 > `/admin`; everything works in French, Arabic (right-to-left) and English,
@@ -21,8 +23,10 @@ paid on delivery or pickup.
 | Area | Highlights | Status |
 | --- | --- | --- |
 | Public site | Homepage, menu with category filters and search, product detail with variants and add-ons | ✅ |
-| Ordering | Cart with server-checked totals, checkout with validation, delivery zones, fees and minimums, order snapshots, WhatsApp hand-off with retry | ✅ |
+| Ordering | Cart with server-checked totals and editable lines (size, extras, notes), checkout with validation, delivery zones, fees and minimums, order snapshots, WhatsApp hand-off with retry | ✅ |
 | Administration | Staff login, dashboard (orders, confirmed revenue, popular dishes, daily chart), orders with manual status workflow, products with sizes, extras and photos, categories, delivery zones, restaurant settings and opening hours | ✅ |
+| Offers | Fixed-price packs built by the customer (e.g. 3 mains + 3 desserts + 3 drinks chosen from dishes the restaurant allows), optional promotion dates, managed in Admin → Offers | ✅ |
+| Delivery | Courier accounts and a mobile courier app (`/livreur`): on-duty switch, assigned deliveries, call / WhatsApp / directions, pick-up and delivery; staff assign a courier by hand or automatically by delivery zone | ✅ |
 | Multilingual | French (default), Arabic with full RTL layout, English; translated catalog content | ✅ |
 | API | REST, OpenAPI/Swagger docs, pagination, filtering, search, consistent error codes | ✅ |
 | Security | Session auth + CSRF, deny-by-default permissions, owner/manager roles, rate limiting, upload validation, DB constraints | ✅ · reviewed again in Phase 6 |
@@ -68,7 +72,8 @@ Taken from the running app with the demo data (`seed_demo`).
 
 Casablanca Art Deco on the brand's black and brass palette: Italiana and Jost
 for Latin text, Reem Kufi and Noto Naskh for Arabic, food photography framed
-in a Moroccan arch, and a menu laid out like a printed menu card. See
+in a Moroccan arch, and a menu laid out like a printed menu card. A light
+mode (cream and bronze) is one tap away in the header and remembered. See
 [docs/architecture.md](docs/architecture.md#5b-design-system).
 
 ---
@@ -143,6 +148,7 @@ card that confirms the SPA can reach the API and the database.
 | --- | --- |
 | http://localhost:5173 | React app (proxies `/api` and `/media` to Django) |
 | http://localhost:5173/admin | Administration dashboard (log in with a staff account, e.g. the one from `createsuperuser`) |
+| http://localhost:5173/livreur | Courier app (log in with a courier account created in Admin → Couriers, or a demo courier from `seed_demo`) |
 | http://127.0.0.1:8000/api/health/ | Health check |
 | http://127.0.0.1:8000/api/docs/ | Swagger UI |
 | http://127.0.0.1:8000/api/schema/ | OpenAPI 3 schema |
@@ -193,8 +199,8 @@ Only `VITE_*` variables reach the browser bundle. Never put secrets in them.
 
 | Suite | Coverage |
 | --- | --- |
-| Backend, pytest (184 tests) | Models and database constraints, pricing (variants, add-ons, sale prices, delivery fees, free delivery, minimum order), order creation and snapshots, idempotent retries, WhatsApp message, status workflow, authentication, permissions (anonymous, customer, manager, owner), uploads, rate limiting, dashboard, sitemap |
-| Frontend, Vitest + Testing Library (113 tests) | Money and pricing helpers, cart store, i18n (keys, plurals, RTL), menu, product options, cart quotes, checkout validation and error mapping, WhatsApp URLs and hand-off (desktop and phone), order page, admin flows, and axe-core accessibility checks on six pages in French and Arabic |
+| Backend, pytest (225 tests) | Offers (rules, pricing, choices, snapshots, WhatsApp), couriers and dispatch (manual and automatic assignment, pick-up, delivery, access rules), models and database constraints, pricing (variants, add-ons, sale prices, delivery fees, free delivery, minimum order), order creation and snapshots, idempotent retries, WhatsApp message, status workflow, authentication, permissions (anonymous, customer, manager, owner), uploads, rate limiting, dashboard, sitemap |
+| Frontend, Vitest + Testing Library (135 tests) | Money and pricing helpers, cart store and line editing, offers (building, cart, editing, admin rules), light/dark theme, courier app, i18n (keys, plurals, RTL), menu, product options, cart quotes, checkout validation and error mapping, WhatsApp URLs and hand-off (desktop and phone), order page, admin flows, and axe-core accessibility checks on six pages in French and Arabic |
 
 ```bash
 # Backend (needs the PostgreSQL container running)

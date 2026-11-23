@@ -14,5 +14,7 @@ export function RequireStaff({ children }: { children: (user: StaffUser) => Reac
       <Navigate to="/admin/login" replace state={{ from: location.pathname + location.search }} />
     )
   }
+  // Couriers have their own app; the admin API would refuse them anyway.
+  if (user.is_courier) return <Navigate to="/livreur" replace />
   return <>{children(user)}</>
 }

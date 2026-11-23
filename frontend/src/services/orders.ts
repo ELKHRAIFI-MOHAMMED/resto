@@ -1,5 +1,5 @@
 import { apiFetch } from '@/services/api'
-import type { CartLine } from '@/store/cart'
+import { expandChoices, isOfferLine, type CartLine } from '@/store/cart'
 import type {
   CreatedOrder,
   CreateOrderRequest,
@@ -10,13 +10,22 @@ import type {
 
 /** The API only receives identifiers and quantities: never prices. */
 export function toOrderItems(lines: CartLine[]): OrderItemInput[] {
-  return lines.map((line) => ({
-    product: line.productId,
-    variant: line.variantId,
-    addons: line.addonIds,
-    quantity: line.quantity,
-    special_instructions: line.specialInstructions,
-  }))
+  return lines.map((line) =>
+    isOfferLine(line)
+      ? {
+          offer: line.offerId as number,
+          choices: expandChoices(line.choices),
+          quantity: line.quantity,
+          special_instructions: line.specialInstructions,
+        }
+      : {
+          product: line.productId as number,
+          variant: line.variantId,
+          addons: line.addonIds,
+          quantity: line.quantity,
+          special_instructions: line.specialInstructions,
+        },
+  )
 }
 
 export function quoteOrder(request: QuoteRequest, signal?: AbortSignal) {

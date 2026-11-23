@@ -12,7 +12,15 @@ from apps.core.exceptions import BusinessRuleError
 from apps.core.i18n import resolve_language
 from apps.restaurant.models import Restaurant
 
-from .models import Order, OrderItem, OrderItemAddon, OrderSequence, OrderStatus, OrderType
+from .models import (
+    Order,
+    OrderItem,
+    OrderItemAddon,
+    OrderItemChoice,
+    OrderSequence,
+    OrderStatus,
+    OrderType,
+)
 from .pricing import ItemRequest, price_order
 from .whatsapp import build_order_message
 
@@ -93,6 +101,7 @@ def create_order(
             OrderItem(
                 order=order,
                 product=item.product,
+                offer=item.offer,
                 product_name=item.product_name,
                 product_price=item.product_price,
                 variant_name=item.variant_name,
@@ -118,7 +127,21 @@ def create_order(
         ]
     )
 
-    order = Order.objects.prefetch_related("items__addons").get(pk=order.pk)
+    OrderItemChoice.objects.bulk_create(
+        [
+            OrderItemChoice(
+                order_item=order_item,
+                group_name=choice.group_name,
+                product=choice.product,
+                product_name=choice.product_name,
+                quantity=choice.quantity,
+            )
+            for order_item, item in zip(order_items, priced.items, strict=True)
+            for choice in item.choices
+        ]
+    )
+
+    order = Order.objects.prefetch_related("items__addons", "items__choices").get(pk=order.pk)
     order.whatsapp_message = build_order_message(order)
     order.save(update_fields=["whatsapp_message", "updated_at"])
     return order
@@ -128,7 +151,11 @@ def find_order_by_client_token(client_token: uuid.UUID | None) -> Order | None:
     """The order already created for this checkout attempt, if any."""
     if client_token is None:
         return None
-    return Order.objects.prefetch_related("items__addons").filter(client_token=client_token).first()
+    return (
+        Order.objects.prefetch_related("items__addons", "items__choices")
+        .filter(client_token=client_token)
+        .first()
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -143,6 +170,12 @@ _COMMON = {
 ALLOWED_TRANSITIONS: dict[str, dict[str, set[str]]] = {
     OrderType.DELIVERY: {
         **_COMMON,
+        # A courier may take a confirmed order straight away (no separate "preparing" step).
+        OrderStatus.CONFIRMED: {
+            OrderStatus.PREPARING,
+            OrderStatus.OUT_FOR_DELIVERY,
+            OrderStatus.CANCELLED,
+        },
         OrderStatus.PREPARING: {OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED},
         OrderStatus.OUT_FOR_DELIVERY: {OrderStatus.COMPLETED, OrderStatus.CANCELLED},
     },
@@ -176,4 +209,16 @@ def change_order_status(order: Order, new_status: str) -> Order:
         order.confirmed_at = timezone.now()
         fields.append("confirmed_at")
     order.save(update_fields=fields)
+
+    # Automatic dispatch: a newly confirmed delivery goes to a courier of its zone.
+    if (
+        new_status == OrderStatus.CONFIRMED
+        and order.order_type == OrderType.DELIVERY
+        and order.courier_id is None
+        and Restaurant.load().auto_assign_couriers
+    ):
+        from .dispatch import auto_assign  # dispatch imports this module
+
+        auto_assign(order)
+        order.refresh_from_db()
     return order

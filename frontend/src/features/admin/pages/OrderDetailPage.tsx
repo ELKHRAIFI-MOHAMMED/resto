@@ -3,16 +3,19 @@ import { MessageCircle, Phone } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 
+import { OfferChoices } from '@/components/OfferChoices'
 import { Money } from '@/components/Price'
 import { Button } from '@/components/ui/Button'
 import { buttonClassName } from '@/components/ui/buttonClassName'
 import { ErrorState, Skeleton } from '@/components/ui/StateMessage'
 import { useLanguage } from '@/hooks/useLanguage'
 import { parseMoney } from '@/lib/money'
+import { summarizeChoices } from '@/lib/offers'
 import { ApiError } from '@/services/api'
 import { useToastStore } from '@/store/toast'
 
 import { ordersApi, type OrderStatus } from '../api'
+import { CourierAssignment } from '../CourierAssignment'
 import { TABLE, TD, TH } from '../helpers'
 import { FormError, PageHeader, Section, StatusBadge } from '../ui'
 import { formatDateTime } from '../format'
@@ -148,6 +151,10 @@ export function OrderDetailPage() {
                               .join(', ')}
                           </span>
                         )}
+                        <OfferChoices
+                          summary={summarizeChoices(item.choices)}
+                          className="text-xs"
+                        />
                         {item.special_instructions && (
                           <span className="block text-xs text-muted italic">
                             {item.special_instructions}
@@ -196,75 +203,81 @@ export function OrderDetailPage() {
           </Section>
         </div>
 
-        <Section title={t('admin.orders.customerTitle')}>
-          <dl className="space-y-4 text-sm">
-            <div>
-              <dt className="text-muted">{t('admin.orders.customer')}</dt>
-              <dd className="mt-1 text-base">{order.customer_name}</dd>
-              <dd className="text-muted">
-                <bdi dir="ltr">{order.customer_phone}</bdi>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-muted">{t('admin.orders.type')}</dt>
-              <dd className="mt-1">{t(`admin.orders.${order.order_type}`)}</dd>
-            </div>
-            {order.order_type === 'delivery' && (
-              <>
-                <div>
-                  <dt className="text-muted">{t('admin.orders.address')}</dt>
-                  <dd className="mt-1">
-                    {/* Latin addresses keep their own order inside Arabic text. */}
-                    <bdi dir="auto">
-                      {order.delivery_address}, {order.city}
-                    </bdi>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted">{t('admin.orders.zone')}</dt>
-                  <dd className="mt-1">{order.delivery_zone_name}</dd>
-                </div>
-              </>
-            )}
-            {order.customer_notes && (
+        <div className="space-y-6">
+          <CourierAssignment order={order} />
+          <Section title={t('admin.orders.customerTitle')}>
+            <dl className="space-y-4 text-sm">
               <div>
-                <dt className="text-muted">{t('admin.orders.notes')}</dt>
-                <dd className="mt-1">{order.customer_notes}</dd>
-              </div>
-            )}
-            <div>
-              <dt className="text-muted">{t('admin.orders.createdAt')}</dt>
-              <dd className="mt-1 tabular-nums">{formatDateTime(order.created_at, language)}</dd>
-            </div>
-            {order.confirmed_at && (
-              <div>
-                <dt className="text-muted">{t('admin.orders.confirmedAt')}</dt>
-                <dd className="mt-1 tabular-nums">
-                  {formatDateTime(order.confirmed_at, language)}
+                <dt className="text-muted">{t('admin.orders.customer')}</dt>
+                <dd className="mt-1 text-base">{order.customer_name}</dd>
+                <dd className="text-muted">
+                  <bdi dir="ltr">{order.customer_phone}</bdi>
                 </dd>
               </div>
-            )}
-            <div>
-              <dt className="text-muted">{t('admin.orders.language')}</dt>
-              <dd className="mt-1 uppercase">{order.language}</dd>
+              <div>
+                <dt className="text-muted">{t('admin.orders.type')}</dt>
+                <dd className="mt-1">{t(`admin.orders.${order.order_type}`)}</dd>
+              </div>
+              {order.order_type === 'delivery' && (
+                <>
+                  <div>
+                    <dt className="text-muted">{t('admin.orders.address')}</dt>
+                    <dd className="mt-1">
+                      {/* Latin addresses keep their own order inside Arabic text. */}
+                      <bdi dir="auto">
+                        {order.delivery_address}, {order.city}
+                      </bdi>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted">{t('admin.orders.zone')}</dt>
+                    <dd className="mt-1">{order.delivery_zone_name}</dd>
+                  </div>
+                </>
+              )}
+              {order.customer_notes && (
+                <div>
+                  <dt className="text-muted">{t('admin.orders.notes')}</dt>
+                  <dd className="mt-1">{order.customer_notes}</dd>
+                </div>
+              )}
+              <div>
+                <dt className="text-muted">{t('admin.orders.createdAt')}</dt>
+                <dd className="mt-1 tabular-nums">{formatDateTime(order.created_at, language)}</dd>
+              </div>
+              {order.confirmed_at && (
+                <div>
+                  <dt className="text-muted">{t('admin.orders.confirmedAt')}</dt>
+                  <dd className="mt-1 tabular-nums">
+                    {formatDateTime(order.confirmed_at, language)}
+                  </dd>
+                </div>
+              )}
+              <div>
+                <dt className="text-muted">{t('admin.orders.language')}</dt>
+                <dd className="mt-1 uppercase">{order.language}</dd>
+              </div>
+            </dl>
+            <div className="mt-6 flex flex-col gap-3">
+              <a
+                href={`https://wa.me/${customerDigits}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonClassName('primary', 'sm')}
+              >
+                <MessageCircle aria-hidden className="size-4" />
+                {t('admin.orders.replyWhatsApp')}
+              </a>
+              <a
+                href={`tel:${order.customer_phone}`}
+                className={buttonClassName('secondary', 'sm')}
+              >
+                <Phone aria-hidden className="size-4" />
+                {t('admin.orders.call')}
+              </a>
             </div>
-          </dl>
-          <div className="mt-6 flex flex-col gap-3">
-            <a
-              href={`https://wa.me/${customerDigits}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonClassName('primary', 'sm')}
-            >
-              <MessageCircle aria-hidden className="size-4" />
-              {t('admin.orders.replyWhatsApp')}
-            </a>
-            <a href={`tel:${order.customer_phone}`} className={buttonClassName('secondary', 'sm')}>
-              <Phone aria-hidden className="size-4" />
-              {t('admin.orders.call')}
-            </a>
-          </div>
-        </Section>
+          </Section>
+        </div>
       </div>
     </>
   )

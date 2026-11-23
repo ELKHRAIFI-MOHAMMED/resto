@@ -3,8 +3,15 @@
  * fixture products the way the backend does, so UI tests exercise real flows.
  */
 import { formatMoney } from '@/lib/money'
-import { burgerDetail, products, restaurant, tea, zones } from '@/test/fixtures'
-import type { CreatedOrder, OrderItemInput, Quote, QuoteRequest } from '@/types/orders'
+import { burgerDetail, familyOffer, products, restaurant, tea, zones } from '@/test/fixtures'
+import type {
+  CreatedOrder,
+  OfferItemInput,
+  OrderItemInput,
+  PricedItem,
+  Quote,
+  QuoteRequest,
+} from '@/types/orders'
 
 const toDecimal = (cents: number) => (cents / 100).toFixed(2)
 const cents = (value: string) => Math.round(Number(value) * 100)
@@ -17,9 +24,46 @@ const details: Record<
   [tea.id]: { variants: [], addons: [] },
 }
 
+function priceOffer(item: OfferItemInput): PricedItem {
+  if (item.offer !== familyOffer.id) throw new Error(`Unknown offer ${item.offer}`)
+  const choices = item.choices.flatMap(({ group: groupId, products: ids }) => {
+    const group = familyOffer.groups.find((candidate) => candidate.id === groupId)
+    if (!group) throw new Error(`Unknown group ${groupId}`)
+    return [...new Set(ids)].map((productId) => {
+      const product = group.products.find((candidate) => candidate.id === productId)
+      if (!product) throw new Error(`Product ${productId} not in group ${groupId}`)
+      return {
+        group: group.id,
+        group_name: group.name,
+        product: product.id,
+        product_name: product.variant_name
+          ? `${product.name} (${product.variant_name})`
+          : product.name,
+        quantity: ids.filter((id) => id === productId).length,
+      }
+    })
+  })
+  const unit = cents(familyOffer.price)
+  return {
+    product: null,
+    offer: familyOffer.id,
+    choices,
+    product_name: familyOffer.name,
+    product_price: familyOffer.price,
+    variant: null,
+    variant_name: '',
+    variant_price: '0.00',
+    addons: [],
+    quantity: item.quantity,
+    unit_price: toDecimal(unit),
+    line_total: toDecimal(unit * item.quantity),
+  }
+}
+
 export function fakeQuote(request: unknown): Quote {
   const { items, order_type = null, delivery_zone = null } = request as QuoteRequest
-  const priced = items.map((item: OrderItemInput) => {
+  const priced = items.map((item: OrderItemInput): PricedItem => {
+    if ('offer' in item) return priceOffer(item)
     const product = products.find((candidate) => candidate.id === item.product)
     if (!product) throw new Error(`Unknown product ${item.product}`)
     const options = details[product.id] ?? { variants: [], addons: [] }
@@ -31,6 +75,8 @@ export function fakeQuote(request: unknown): Quote {
       addons.reduce((sum, addon) => sum + cents(addon.price), 0)
     return {
       product: product.id,
+      offer: null,
+      choices: [],
       product_name: product.name,
       product_price: product.effective_price,
       variant: variant?.id ?? null,
@@ -82,6 +128,8 @@ export function fakeCreatedOrder(request: unknown, reference = 'RF-2026-0042'): 
     items: quote.items.map((item, index) => ({
       id: index + 1,
       product: item.product,
+      offer: item.offer,
+      choices: item.choices.map((choice, position) => ({ ...choice, id: position + 1 })),
       product_name: item.product_name,
       variant_name: item.variant_name,
       addons: item.addons.map((addon) => ({

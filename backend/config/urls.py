@@ -25,9 +25,11 @@ api_patterns = [
     path("restaurant/", include("apps.restaurant.urls")),
     path("categories/", include("apps.categories.urls")),
     path("products/", include("apps.products.urls")),
+    path("offers/", include("apps.offers.urls")),
     path("delivery/", include("apps.delivery.urls")),
     path("orders/", include("apps.orders.urls")),
     path("admin/", include("config.admin_api")),
+    path("courier/", include("apps.orders.courier_urls")),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
 ]

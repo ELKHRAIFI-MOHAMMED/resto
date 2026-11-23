@@ -1,6 +1,7 @@
 from django.db import IntegrityError
 from django.db.models import Count, Prefetch
 from django.utils.translation import get_language
+from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
@@ -8,15 +9,18 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.core.exceptions import BusinessRuleError
 from apps.core.views import PublicAPIMixin, StaffAPIMixin
 
 from .dashboard import dashboard_stats
+from .dispatch import assign_courier, auto_assign
 from .filters import AdminOrderFilter
 from .models import Order, OrderItem
 from .pricing import price_order
 from .serializers import (
     AdminOrderDetailSerializer,
     AdminOrderListSerializer,
+    CourierAssignmentSerializer,
     DashboardSerializer,
     OrderCreatedSerializer,
     OrderCreateInputSerializer,
@@ -110,7 +114,7 @@ class AdminOrderViewSet(
         if self.action == "list":
             return queryset.annotate(item_count=Count("items"))
         return queryset.prefetch_related(
-            Prefetch("items", queryset=OrderItem.objects.prefetch_related("addons"))
+            Prefetch("items", queryset=OrderItem.objects.prefetch_related("addons", "choices"))
         )
 
     def get_serializer_class(self):
@@ -129,6 +133,31 @@ class AdminOrderViewSet(
         change_order_status(self.get_object(), serializer.validated_data["status"])
         order = self.get_queryset().get(pk=pk)
         return Response(AdminOrderDetailSerializer(order).data)
+
+    @extend_schema(
+        summary="Assign or unassign a courier",
+        request=CourierAssignmentSerializer,
+        responses=AdminOrderDetailSerializer,
+    )
+    @action(detail=True, methods=["patch"], url_path="courier")
+    def assign_courier(self, request, pk=None):
+        serializer = CourierAssignmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        assign_courier(self.get_object(), serializer.validated_data["courier"])
+        return Response(AdminOrderDetailSerializer(self.get_queryset().get(pk=pk)).data)
+
+    @extend_schema(
+        summary="Assign the best available courier of the order's zone",
+        request=None,
+        responses=AdminOrderDetailSerializer,
+    )
+    @action(detail=True, methods=["post"], url_path="auto-assign")
+    def auto_assign_courier(self, request, pk=None):
+        if auto_assign(self.get_object()) is None:
+            raise BusinessRuleError(
+                "no_courier_available", _("No on-duty courier serves this zone."), status_code=409
+            )
+        return Response(AdminOrderDetailSerializer(self.get_queryset().get(pk=pk)).data)
 
 
 class DashboardQuerySerializer(serializers.Serializer):

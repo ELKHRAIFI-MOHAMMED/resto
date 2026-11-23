@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui/StateMessage'
 import { CategoryNav } from '@/features/menu/CategoryNav'
 import { groupByCategory } from '@/features/menu/groupProducts'
+import { OffersSection } from '@/features/offers/OffersSection'
 import { ProductRow } from '@/features/menu/ProductRow'
 import { useCategories, useProducts } from '@/hooks/useCatalog'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
@@ -59,6 +60,7 @@ export function MenuPage() {
       <header className="pt-12 pb-8 sm:pt-16">
         <h1 className="font-display text-5xl sm:text-6xl">{t('menu.title')}</h1>
       </header>
+      {!search && !activeCategory && <OffersSection className="pb-12" />}
 
       <div className="sticky top-16 z-30 -mx-4 border-b border-border bg-background px-4 py-3 sm:-mx-6 sm:px-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">

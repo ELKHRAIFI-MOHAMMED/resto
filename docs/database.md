@@ -41,8 +41,8 @@ Staff accounts. Customers never have accounts.
 | --- | --- | --- |
 | email | varchar, unique | login identifier, stored lower-case; plus a unique index on `LOWER(email)` |
 | password | varchar | PBKDF2 hash (Django default) |
-| role | `owner` / `manager` | the owner (or a superuser) manages restaurant settings |
-| is_staff, is_active, is_superuser | bool | only active staff can use the dashboard |
+| role | `owner` / `manager` / `courier` | the owner (or a superuser) manages restaurant settings; couriers are not staff |
+| is_staff, is_active, is_superuser | bool | only active staff can use the dashboard; couriers use the courier app |
 
 ### restaurant_restaurant (single row)
 | Column | Notes |
@@ -101,6 +101,17 @@ Gallery images (`product_id` CASCADE, `image`, `display_order`).
 `name_*` (`name_fr` unique), `delivery_fee ≥ 0`, `minimum_order_amount ≥ 0`,
 `display_order`, `is_active`.
 
+### delivery_courier
+`user_id` (one-to-one, cascade), `phone`, `zones` (many-to-many to delivery
+zones), `is_on_duty`, `last_assigned_at` (fair dispatch tie-break).
+
+### offers_offer and offers_offergroup
+`offers_offer`: `name_*`, `slug` (unique), `description_*`, `price > 0`,
+`image`, `is_active`, optional `starts_on` / `ends_on` (`ends_on ≥ starts_on`),
+`display_order`. `offers_offergroup`: FK offer (cascade), `name_*`,
+`quantity` (1–20, number of dishes to pick), `display_order`, and a
+many-to-many to the products that can be picked.
+
 ### orders_order
 | Column | Notes |
 | --- | --- |
@@ -114,6 +125,8 @@ Gallery images (`product_id` CASCADE, `image`, `display_order`).
 | subtotal, delivery_fee, total, currency | authoritative amounts |
 | whatsapp_number, whatsapp_message | exact hand-off data, so a retry sends the same message |
 | confirmed_at | set the first time staff confirm the order |
+| courier_id | FK SET_NULL to `delivery_courier` |
+| assigned_at, picked_up_at, delivered_at | delivery timeline |
 
 Constraints: `total = subtotal + delivery_fee`; amounts ≥ 0; pickup orders
 have `delivery_fee = 0`. Indexes: `(status, created_at)`, `created_at`,
@@ -129,6 +142,12 @@ have `delivery_fee = 0`. Indexes: `(status, created_at)`, `created_at`,
 | unit_price | product + variant + add-ons, for one unit |
 | line_total | `CHECK (line_total = unit_price * quantity)` |
 | special_instructions | free text (255) |
+
+### orders_orderitemchoice
+For offer lines (`orders_orderitem.offer_id` set, `product_id` null, name and
+price of the offer as snapshots): one row per dish picked, with `group_name`,
+`product_id` (SET_NULL), `product_name` (with the size served) and `quantity`
+(per unit of the offer).
 
 ### orders_orderitemaddon
 `order_item_id` (CASCADE), `addon_id` (SET_NULL), `addon_name` and
@@ -146,3 +165,7 @@ never share a number.
 6 Casablanca delivery zones, opening hours, and Unsplash stock photos from
 `backend/demo/images` (credits in `CREDITS.md`; skip them with `--no-images`). It is idempotent and refuses to run when `DEBUG` is off
 (unless `--force`). The WhatsApp number is a placeholder (`212600000000`).
+It also creates two demo offers (Offre Famille, 299 MAD: 3 mains, 3 desserts,
+3 drinks; Menu Duo, 149 MAD) and two demo couriers, on duty, each serving three zones:
+`livreur1@restoflow.local` and `livreur2@restoflow.local` (password
+`Demo-Livreur-2026`, for local development only).

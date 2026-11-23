@@ -16,8 +16,10 @@ from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from apps.accounts.models import User
 from apps.categories.models import Category
-from apps.delivery.models import DeliveryZone
+from apps.delivery.models import Courier, DeliveryZone
+from apps.offers.models import Offer, OfferGroup
 from apps.products.models import Addon, Product, ProductImage, ProductVariant
 from apps.restaurant.models import OpeningHour, Restaurant
 
@@ -109,6 +111,40 @@ CATEGORIES = {
         6,
     ),
 }
+
+# Offers (packs): (names, descriptions, price, image, groups)
+# group: ((name fr, ar, en), quantity, category slugs whose products can be chosen)
+OFFERS = [
+    (
+        ("Offre Famille", "عرض العائلة", "Family deal"),
+        (
+            "Trois plats, trois desserts et trois boissons au choix, à partager.",
+            "ثلاثة أطباق وثلاث حلويات وثلاثة مشروبات من اختياركم، للمشاركة.",
+            "Three mains, three desserts and three drinks of your choice, to share.",
+        ),
+        D("299.00"),
+        "pizza-margherita",
+        [
+            (("Plats", "الأطباق", "Mains"), 3, ["burgers", "tacos", "pizzas"]),
+            (("Desserts", "الحلويات", "Desserts"), 3, ["desserts"]),
+            (("Boissons", "المشروبات", "Drinks"), 3, ["boissons"]),
+        ],
+    ),
+    (
+        ("Menu Duo", "قائمة الثنائي", "Duo menu"),
+        (
+            "Deux plats et deux boissons au choix.",
+            "طبقان ومشروبان من اختياركم.",
+            "Two mains and two drinks of your choice.",
+        ),
+        D("149.00"),
+        "double-cheese-burger",
+        [
+            (("Plats", "الأطباق", "Mains"), 2, ["burgers", "tacos"]),
+            (("Boissons", "المشروبات", "Drinks"), 2, ["boissons"]),
+        ],
+    ),
+]
 
 SIZES_PIZZA = [("Moyenne", "متوسطة", "Medium", D("0")), ("Grande", "كبيرة", "Large", D("25"))]
 SIZES_TACOS = [("M", "M", "M", D("0")), ("L", "L", "L", D("15")), ("XL", "XL", "XL", D("30"))]
@@ -229,6 +265,19 @@ ZONES = [
     ("Sidi Maârouf", "سيدي معروف", "Sidi Maarouf", D("30"), D("120")),
 ]
 
+# Demo courier accounts (local testing only): (email, first, last, phone, zones)
+DEMO_COURIER_PASSWORD = "Demo-Livreur-2026"  # noqa: S105 - demo data, seed refuses to run without DEBUG
+COURIERS = [
+    ("livreur1@restoflow.local", "Youssef", "Amrani", "0611111111", ["Maârif", "Gauthier", "Anfa"]),
+    (
+        "livreur2@restoflow.local",
+        "Karim",
+        "Bennani",
+        "0622222222",
+        ["Bourgogne", "Aïn Diab", "Sidi Maârouf"],
+    ),
+]
+
 LUNCH = (time(12, 0), time(15, 0))
 DINNER = (time(19, 0), time(23, 30))
 LATE_DINNER = (time(19, 0), time(1, 0))  # past midnight
@@ -308,10 +357,31 @@ class Command(BaseCommand):
                 },
             )
 
+        for order, offer_data in enumerate(OFFERS):
+            self._upsert_offer(order, *offer_data, with_images=not no_images)
+
+        for email, first, last, phone, zone_names in COURIERS:
+            user = User.objects.filter(email=email).first()
+            if user is None:
+                user = User.objects.create_user(
+                    email=email,
+                    password=DEMO_COURIER_PASSWORD,
+                    first_name=first,
+                    last_name=last,
+                    role=User.Role.COURIER,
+                    is_staff=False,
+                )
+            courier, _ = Courier.objects.update_or_create(
+                user=user, defaults={"phone": phone, "is_on_duty": True}
+            )
+            courier.zones.set(DeliveryZone.objects.filter(name_fr__in=zone_names))
+
         self.stdout.write(
             self.style.SUCCESS(
                 f"Demo content loaded: {len(CATEGORIES)} categories, {product_count} products, "
-                f"{len(ADDONS)} add-ons, {len(ZONES)} delivery zones, {len(slots)} opening slots."
+                f"{len(ADDONS)} add-ons, {len(OFFERS)} offers, {len(ZONES)} delivery zones, "
+                f"{len(slots)} opening slots, "
+                f"{len(COURIERS)} couriers (password {DEMO_COURIER_PASSWORD})."
             )
         )
         self.stdout.write(
@@ -320,6 +390,37 @@ class Command(BaseCommand):
                 "set the real number in the admin settings."
             )
         )
+
+    @staticmethod
+    def _upsert_offer(order, names, descriptions, price, image, groups, *, with_images: bool):
+        (fr, ar, en), (d_fr, d_ar, d_en) = names, descriptions
+        offer, _ = Offer.objects.update_or_create(
+            name_fr=fr,
+            defaults={
+                "name_ar": ar,
+                "name_en": en,
+                "description_fr": d_fr,
+                "description_ar": d_ar,
+                "description_en": d_en,
+                "price": price,
+                "is_active": True,
+                "display_order": order,
+            },
+        )
+        offer.groups.all().delete()
+        for position, ((g_fr, g_ar, g_en), quantity, category_slugs) in enumerate(groups):
+            group = OfferGroup.objects.create(
+                offer=offer,
+                name_fr=g_fr,
+                name_ar=g_ar,
+                name_en=g_en,
+                quantity=quantity,
+                display_order=position,
+            )
+            group.products.set(Product.objects.filter(category__slug__in=category_slugs))
+        if with_images and not offer.image:
+            with (DEMO_IMAGES_DIR / f"{image}.webp").open("rb") as handle:
+                offer.image.save(f"{image}.webp", File(handle), save=True)
 
     def _upsert_product(self, category, position, data, addons, *, with_images: bool) -> None:
         (fr, ar, en), (d_fr, d_ar, d_en) = data["names"], data["descriptions"]

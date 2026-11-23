@@ -7,7 +7,8 @@ rule, delivery fee and minimum order is evaluated here, from the database.
 order creation.
 """
 
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, field
 from decimal import Decimal
 
 from django.conf import settings
@@ -18,6 +19,8 @@ from apps.core.exceptions import BusinessRuleError
 from apps.core.i18n import localized_value
 from apps.core.money import ZERO, quantize
 from apps.delivery.models import DeliveryZone
+from apps.offers.models import Offer, OfferGroup
+from apps.offers.selectors import current_offers, default_variant
 from apps.products.models import Addon, Product, ProductVariant
 from apps.restaurant.models import Restaurant
 
@@ -36,11 +39,16 @@ class OrderingUnavailableError(BusinessRuleError):
 
 @dataclass(frozen=True)
 class ItemRequest:
-    product_id: int
+    """A product line (`product_id`) or an offer line (`offer_id` and `choices`)."""
+
+    product_id: int | None
     quantity: int
     variant_id: int | None = None
     addon_ids: tuple[int, ...] = ()
     special_instructions: str = ""
+    offer_id: int | None = None
+    # (group id, product ids picked in that group; a product may repeat)
+    choices: tuple[tuple[int, tuple[int, ...]], ...] = ()
 
 
 @dataclass
@@ -51,8 +59,17 @@ class PricedAddon:
 
 
 @dataclass
-class PricedItem:
+class PricedChoice:
+    group: OfferGroup
+    group_name: str
     product: Product
+    product_name: str  # with the size served, e.g. "Tacos Poulet (M)"
+    quantity: int
+
+
+@dataclass
+class PricedItem:
+    product: Product | None
     product_name: str
     product_price: Decimal
     variant: ProductVariant | None
@@ -63,6 +80,8 @@ class PricedItem:
     unit_price: Decimal
     line_total: Decimal
     special_instructions: str
+    offer: Offer | None = None
+    choices: list[PricedChoice] = field(default_factory=list)
 
 
 @dataclass
@@ -160,6 +179,76 @@ def _price_item(index: int, request: ItemRequest, product: Product | None, error
     )
 
 
+def _load_offers(offer_ids: set[int]) -> dict[int, Offer]:
+    return {offer.pk: offer for offer in current_offers().filter(pk__in=offer_ids)}
+
+
+def _choice_name(product: Product) -> str:
+    name = localized_value(product, "name")
+    variant = default_variant(product)
+    return f"{name} ({localized_value(variant, 'name')})" if variant else name
+
+
+def _price_offer(index: int, request: ItemRequest, offer: Offer | None, errors: list[dict]):
+    if offer is None:
+        errors.append(
+            _item_error(index, "offer_not_found", _("This offer is no longer available."))
+        )
+        return None
+
+    groups = list(offer.groups.all())
+    picked = dict(request.choices)
+    invalid = _item_error(index, "offer_choices_invalid", _("Please complete your choices."))
+    if len(picked) != len(request.choices) or set(picked) != {group.pk for group in groups}:
+        errors.append(invalid)
+        return None
+
+    choices: list[PricedChoice] = []
+    for group in groups:
+        product_ids = picked[group.pk]
+        allowed = {product.pk: product for product in group.products.all()}
+        if len(product_ids) != group.quantity or not set(product_ids).issubset(allowed):
+            errors.append(invalid)
+            return None
+        for product_id, count in Counter(product_ids).items():
+            product = allowed[product_id]
+            if not product.is_available:
+                errors.append(
+                    _item_error(
+                        index,
+                        "offer_choice_unavailable",
+                        _("%(name)s is currently unavailable.")
+                        % {"name": localized_value(product, "name")},
+                    )
+                )
+                return None
+            choices.append(
+                PricedChoice(
+                    group=group,
+                    group_name=localized_value(group, "name"),
+                    product=product,
+                    product_name=_choice_name(product),
+                    quantity=count,
+                )
+            )
+
+    return PricedItem(
+        product=None,
+        product_name=localized_value(offer, "name"),
+        product_price=offer.price,
+        variant=None,
+        variant_name="",
+        variant_price=ZERO,
+        addons=[],
+        quantity=request.quantity,
+        unit_price=offer.price,
+        line_total=quantize(offer.price * request.quantity),
+        special_instructions=request.special_instructions.strip(),
+        offer=offer,
+        choices=choices,
+    )
+
+
 def ensure_ordering_available(restaurant: Restaurant, order_type: str | None) -> None:
     if not restaurant.is_accepting_orders:
         raise OrderingUnavailableError(
@@ -202,11 +291,15 @@ def price_order(
     if len(items) > settings.ORDER_MAX_LINES:
         raise OrderValidationError("too_many_items", _("Your order has too many items."))
 
-    products = _load_products({item.product_id for item in items})
+    products = _load_products({item.product_id for item in items if item.product_id})
+    offers = _load_offers({item.offer_id for item in items if item.offer_id})
     errors: list[dict] = []
     priced_items = []
     for index, request in enumerate(items):
-        priced = _price_item(index, request, products.get(request.product_id), errors)
+        if request.offer_id is not None:
+            priced = _price_offer(index, request, offers.get(request.offer_id), errors)
+        else:
+            priced = _price_item(index, request, products.get(request.product_id), errors)
         if priced:
             priced_items.append(priced)
     if errors:

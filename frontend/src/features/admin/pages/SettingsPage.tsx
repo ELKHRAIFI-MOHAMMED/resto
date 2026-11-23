@@ -158,6 +158,12 @@ function SettingsForm({ initial }: { initial: AdminSettings }) {
               checked={values.pickup_enabled}
               onChange={(pickup_enabled) => set({ pickup_enabled })}
             />
+            <Checkbox
+              label={t('admin.settings.autoAssign')}
+              hint={t('admin.settings.autoAssignHint')}
+              checked={values.auto_assign_couriers}
+              onChange={(auto_assign_couriers) => set({ auto_assign_couriers })}
+            />
             {text('minimum_order_amount', t('admin.settings.minimumOrder'), {
               type: 'number',
               min: 0,

@@ -10,7 +10,8 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import TimeStampedModel
 from apps.core.money import ZERO, money_field
-from apps.delivery.models import DeliveryZone
+from apps.delivery.models import Courier, DeliveryZone
+from apps.offers.models import Offer
 from apps.products.models import Addon, Product
 
 
@@ -68,6 +69,19 @@ class Order(TimeStampedModel):
 
     confirmed_at = models.DateTimeField(_("confirmed at"), null=True, blank=True)
 
+    # Delivery dispatch
+    courier = models.ForeignKey(
+        Courier,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
+        verbose_name=_("courier"),
+    )
+    assigned_at = models.DateTimeField(_("assigned at"), null=True, blank=True)
+    picked_up_at = models.DateTimeField(_("picked up at"), null=True, blank=True)
+    delivered_at = models.DateTimeField(_("delivered at"), null=True, blank=True)
+
     # Random token sent by the client with each checkout attempt. Retrying the
     # same attempt (e.g. after a dropped connection) returns the existing order
     # instead of creating a duplicate.
@@ -117,6 +131,16 @@ class OrderItem(models.Model):
         related_name="order_items",
         verbose_name=_("product"),
     )
+    # An offer line has no product: its name and price are the offer's, and the
+    # dishes the customer picked are saved as OrderItemChoice rows.
+    offer = models.ForeignKey(
+        Offer,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="order_items",
+        verbose_name=_("offer"),
+    )
     product_name = models.CharField(_("product name (snapshot)"), max_length=160)
     product_price = money_field(_("product price (snapshot)"))
     variant_name = models.CharField(_("variant (snapshot)"), max_length=120, blank=True)
@@ -160,6 +184,36 @@ class OrderItemAddon(models.Model):
 
     def __str__(self) -> str:
         return self.addon_name
+
+
+class OrderItemChoice(models.Model):
+    """A dish picked in one group of an offer, for one unit of the offer line."""
+
+    order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name="choices")
+    group_name = models.CharField(_("group (snapshot)"), max_length=120)
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="order_item_choices",
+    )
+    # Product name with its size, e.g. "Tacos Poulet (M)".
+    product_name = models.CharField(_("product name (snapshot)"), max_length=300)
+    quantity = models.PositiveSmallIntegerField(_("quantity"))
+
+    class Meta:
+        verbose_name = _("offer choice")
+        verbose_name_plural = _("offer choices")
+        ordering = ["id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=1), name="order_item_choice_quantity_positive"
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.quantity}x {self.product_name}"
 
 
 class OrderSequence(models.Model):

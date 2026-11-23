@@ -56,6 +56,13 @@ class Restaurant(TimeStampedModel):
     is_accepting_orders = models.BooleanField(_("accepting orders"), default=True)
     delivery_enabled = models.BooleanField(_("delivery enabled"), default=True)
     pickup_enabled = models.BooleanField(_("pickup enabled"), default=True)
+    auto_assign_couriers = models.BooleanField(
+        _("assign couriers automatically"),
+        default=True,
+        help_text=_(
+            "When a delivery order is confirmed, give it to an on-duty courier of its zone."
+        ),
+    )
     minimum_order_amount = money_field(
         _("minimum order amount for delivery"),
         default=Decimal("0.00"),

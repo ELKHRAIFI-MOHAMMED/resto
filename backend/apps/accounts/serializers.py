@@ -7,10 +7,11 @@ from .models import User
 
 class UserSerializer(serializers.ModelSerializer):
     is_owner = serializers.BooleanField(read_only=True)
+    is_courier = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "role", "is_owner"]
+        fields = ["id", "email", "first_name", "last_name", "role", "is_owner", "is_courier"]
         read_only_fields = fields
 
 
@@ -24,7 +25,8 @@ class LoginSerializer(serializers.Serializer):
         )
         # Same message whether the account is missing, inactive or not staff:
         # never reveal which emails exist.
-        if user is None or not user.is_staff:
+        # Staff (dashboard) and couriers (delivery app) may log in; nobody else.
+        if user is None or not (user.is_staff or user.is_courier):
             raise serializers.ValidationError(
                 _("Invalid email or password."), code="invalid_credentials"
             )

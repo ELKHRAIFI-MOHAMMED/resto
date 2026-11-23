@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useParams } from 'react-router'
 
+import { OfferChoices } from '@/components/OfferChoices'
 import { Money } from '@/components/Price'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { buttonClassName } from '@/components/ui/buttonClassName'
@@ -11,6 +12,7 @@ import type { OrderPageState } from '@/features/checkout/usePlaceOrder'
 import { buildWhatsAppUrl } from '@/features/checkout/whatsapp'
 import { useRestaurant } from '@/hooks/useCatalog'
 import { parseMoney } from '@/lib/money'
+import { summarizeChoices } from '@/lib/offers'
 import { useLastOrderStore } from '@/store/lastOrder'
 import { useToastStore } from '@/store/toast'
 
@@ -147,6 +149,7 @@ export function OrderPage() {
                       .join(', ')}
                   </span>
                 )}
+                <OfferChoices summary={summarizeChoices(item.choices)} className="text-xs" />
               </span>
               <Money cents={parseMoney(item.line_total)} />
             </li>

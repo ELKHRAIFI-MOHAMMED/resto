@@ -233,6 +233,63 @@ describe('cart page', () => {
   })
 })
 
+describe('editing a cart line', () => {
+  it('reopens the dish with the chosen options and replaces the line', async () => {
+    const user = userEvent.setup()
+    mockCatalog()
+    useCartStore.getState().addItem({
+      productId: burger.id,
+      slug: burger.slug,
+      name: burger.name,
+      image: null,
+      variantId: 100,
+      variantName: 'Simple',
+      addonIds: [200],
+      addonNames: ['Fromage'],
+      unitPriceCents: 7300,
+      quantity: 2,
+      specialInstructions: 'Bien cuit',
+    })
+    const { router } = renderRoutes(routes, '/cart')
+
+    await user.click(screen.getByRole('link', { name: 'Modifier Double Cheese' }))
+
+    // The form starts from the line's current choices
+    expect(await screen.findByText('Vous modifiez un article de votre panier.')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /Simple/ })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: /Fromage/ })).toBeChecked()
+    expect(screen.getByLabelText(/Remarques pour la cuisine/)).toHaveValue('Bien cuit')
+
+    await user.click(screen.getByRole('radio', { name: /XL/ }))
+    await user.click(screen.getByRole('checkbox', { name: /Fromage/ }))
+    await user.click(screen.getByRole('checkbox', { name: /Bacon/ }))
+    await user.clear(screen.getByLabelText(/Remarques pour la cuisine/))
+    await user.click(screen.getByRole('button', { name: /Mettre à jour/ }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/cart'))
+    expect(useCartStore.getState().lines).toMatchObject([
+      {
+        variantId: 101,
+        variantName: 'XL',
+        addonIds: [201],
+        addonNames: ['Bacon'],
+        quantity: 2,
+        unitPriceCents: 9750,
+        specialInstructions: '',
+      },
+    ])
+    expect(await screen.findByText('XL, + Bacon')).toBeInTheDocument()
+  })
+
+  it('adds a new line when the edited one is gone', async () => {
+    mockCatalog()
+    renderRoutes(routes, '/menu/double-cheese?edit=missing')
+
+    expect(await screen.findByRole('button', { name: /Ajouter au panier/ })).toBeInTheDocument()
+    expect(screen.queryByText('Vous modifiez un article de votre panier.')).not.toBeInTheDocument()
+  })
+})
+
 describe('routing', () => {
   it('renders a 404 page for unknown paths', () => {
     mockCatalog()

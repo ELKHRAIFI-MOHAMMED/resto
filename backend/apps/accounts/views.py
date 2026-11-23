@@ -16,7 +16,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from apps.core.permissions import IsStaff
+from apps.core.permissions import IsStaffOrCourier
 
 from .serializers import LoginSerializer, UserSerializer
 
@@ -52,7 +52,7 @@ class LoginView(APIView):
 
 
 class LogoutView(APIView):
-    permission_classes = [IsStaff]
+    permission_classes = [IsStaffOrCourier]
 
     @extend_schema(tags=["auth"], summary="Log out", request=None, responses={204: None})
     def post(self, request):
@@ -61,7 +61,7 @@ class LogoutView(APIView):
 
 
 class MeView(APIView):
-    permission_classes = [IsStaff]
+    permission_classes = [IsStaffOrCourier]
 
     @extend_schema(tags=["auth"], summary="Current user", responses=UserSerializer)
     def get(self, request):

@@ -254,6 +254,11 @@ the API.
   submitting. Client-side validation mirrors the backend rules for instant,
   translated feedback; backend field errors map back onto the same fields.
 - Every API error code has a translated message (`features/checkout/errors.ts`).
+- Each cart line has an Edit link to `/menu/<slug>?edit=<line key>`: the product
+  form opens on the line's size, extras, quantity and notes (options that no
+  longer exist are dropped) and `replaceLine` swaps it in place, merging it
+  with an identical line if there is one. A stale key simply opens the normal
+  add-to-cart form.
 
 ## 6b. Administration dashboard
 
@@ -274,6 +279,42 @@ CSRF header); the route guard (`RequireStaff`) is a convenience, the API is
 the authority (403 for anyone else). Order confirmation is always a manual
 action, with a reminder to wait for the customer's WhatsApp message.
 Images are uploaded with a separate multipart request after the JSON save.
+
+## 6b2. Offers (packs)
+
+- `apps/offers`: an offer has a fixed price and groups ("pick 3 among these
+  dishes"). `current_offers()` is shared by the public API and pricing, so an
+  offer outside its dates can neither be shown nor ordered.
+- Pricing (`orders/pricing.py`) treats an offer line like a product line:
+  validated from the database, priced at the offer price, snapshotted with
+  its picks (`OrderItemChoice`) in the order's language.
+- Frontend: `/offres/:slug` (lazy chunk) with a picker per group; cart lines
+  carry `offerId` and `choices`, are keyed by offer + picks + notes, and can
+  be edited like product lines. Offers show on the home page and at the top
+  of the menu. Admin → Offers edits the rules (groups, dishes per category,
+  price, dates).
+
+## 6c. Couriers and dispatch
+
+- Couriers are `User` rows with role `courier` (never staff) plus a `Courier`
+  profile (phone, zones, on-duty flag). They log in through the same
+  endpoint; `/admin` redirects them to `/livreur`, and the API checks roles
+  on every request (`IsCourier`, `IsStaff`).
+- `apps/orders/dispatch.py` holds the rules: manual assignment, automatic
+  choice (zone, on duty, fewest active deliveries, longest wait), pick-up and
+  delivery transitions. Auto-assignment runs when staff confirm a delivery
+  order, if enabled in Settings.
+- `/livreur/*` is its own lazy chunk (`features/courier/`), mobile first, with
+  the amount to collect, call / WhatsApp / directions links and a 20 s
+  refresh.
+
+## 6d. Light mode
+
+The palette is CSS variables; `:root[data-theme='light']` swaps them for a
+cream and bronze set (all text pairs ≥ 4.5:1). `public/theme-init.js` applies
+the saved choice (`localStorage['restoflow.theme']`) before first paint, as
+an external script so the CSP needs no inline exception. Dark stays the
+default.
 
 ## 7. Key decisions
 

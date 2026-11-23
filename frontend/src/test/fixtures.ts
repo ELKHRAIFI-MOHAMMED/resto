@@ -2,6 +2,7 @@
 import type {
   Category,
   DeliveryZone,
+  Offer,
   OpeningHour,
   ProductDetail,
   ProductSummary,
@@ -118,6 +119,59 @@ export const burgerDetail: ProductDetail = {
     { id: 201, name: 'Bacon', price: '12.50' },
   ],
   images: [],
+}
+
+/** 2 mains (burgers) + 1 drink for 99 MAD. */
+export const familyOffer: Offer = {
+  id: 7,
+  slug: 'offre-famille',
+  name: 'Offre Famille',
+  description: 'Deux plats et une boisson au choix.',
+  price: '99.00',
+  image: null,
+  starts_on: null,
+  ends_on: null,
+  is_available: true,
+  groups: [
+    {
+      id: 1,
+      name: 'Plats',
+      quantity: 2,
+      products: [
+        {
+          id: burger.id,
+          slug: burger.slug,
+          name: burger.name,
+          image: null,
+          is_available: true,
+          variant_name: 'Simple',
+        },
+        {
+          id: chicken.id,
+          slug: chicken.slug,
+          name: chicken.name,
+          image: null,
+          is_available: false,
+          variant_name: '',
+        },
+      ],
+    },
+    {
+      id: 2,
+      name: 'Boissons',
+      quantity: 1,
+      products: [
+        {
+          id: tea.id,
+          slug: tea.slug,
+          name: tea.name,
+          image: null,
+          is_available: true,
+          variant_name: '',
+        },
+      ],
+    },
+  ],
 }
 
 export const zones: DeliveryZone[] = [

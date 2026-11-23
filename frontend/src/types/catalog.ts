@@ -86,6 +86,38 @@ export interface ProductDetail extends ProductSummary {
   images: ProductGalleryImage[]
 }
 
+/** A dish that can be picked in an offer group, served in `variant_name` size. */
+export interface OfferProduct {
+  id: number
+  slug: string
+  name: string
+  image: string | null
+  is_available: boolean
+  variant_name: string
+}
+
+export interface OfferGroup {
+  id: number
+  name: string
+  /** How many dishes the customer picks in this group (repeats allowed). */
+  quantity: number
+  products: OfferProduct[]
+}
+
+/** A pack at a fixed price, e.g. 3 mains + 3 desserts + 3 drinks. */
+export interface Offer {
+  id: number
+  slug: string
+  name: string
+  description: string
+  price: string
+  image: string | null
+  starts_on: string | null
+  ends_on: string | null
+  is_available: boolean
+  groups: OfferGroup[]
+}
+
 export interface DeliveryZone {
   id: number
   name: string

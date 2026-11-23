@@ -3,8 +3,10 @@
  * Every page requires a staff session; the API enforces it too.
  */
 import {
+  Bike,
   ClipboardList,
   Cog,
+  Gift,
   ExternalLink,
   LayoutDashboard,
   LogOut,
@@ -18,16 +20,20 @@ import { Link, Navigate, NavLink, Outlet, Route, Routes, useNavigate } from 'rea
 import './i18n'
 
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { Toaster } from '@/components/Toaster'
 import { cx } from '@/lib/cx'
 
 import { useLogout } from './auth'
 import { RequireStaff } from './RequireStaff'
 import { CategoriesPage } from './pages/CategoriesPage'
+import { CouriersPage } from './pages/CouriersPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { DeliveryPage } from './pages/DeliveryPage'
 import { LoginPage } from './pages/LoginPage'
 import { OrderDetailPage } from './pages/OrderDetailPage'
+import { OfferEditPage } from './pages/OfferEditPage'
+import { OffersPage } from './pages/OffersPage'
 import { OrdersPage } from './pages/OrdersPage'
 import { AddonsPage } from './pages/AddonsPage'
 import { ProductEditPage } from './pages/ProductEditPage'
@@ -38,8 +44,10 @@ const NAV = [
   { to: '/admin/dashboard', key: 'dashboard', icon: LayoutDashboard },
   { to: '/admin/orders', key: 'orders', icon: ClipboardList },
   { to: '/admin/products', key: 'products', icon: UtensilsCrossed },
+  { to: '/admin/offers', key: 'offers', icon: Gift },
   { to: '/admin/categories', key: 'categories', icon: Tags },
   { to: '/admin/delivery', key: 'delivery', icon: MapPin },
+  { to: '/admin/couriers', key: 'couriers', icon: Bike },
   { to: '/admin/settings', key: 'settings', icon: Cog },
 ] as const
 
@@ -59,7 +67,10 @@ function AdminShell() {
               <Link to="/admin/dashboard" className="font-display text-2xl">
                 {t('brand.name')}
               </Link>
-              <LanguageSwitcher />
+              <div className="flex items-center">
+                <LanguageSwitcher />
+                <ThemeToggle />
+              </div>
             </div>
             <nav aria-label={t('admin.nav.label')} className="px-3 pb-3">
               <ul className="flex gap-1 overflow-x-auto lg:flex-col">
@@ -133,8 +144,12 @@ export function AdminApp() {
         <Route path="products/addons" element={<AddonsPage />} />
         <Route path="products/new" element={<ProductEditPage />} />
         <Route path="products/:id" element={<ProductEditPage />} />
+        <Route path="offers" element={<OffersPage />} />
+        <Route path="offers/new" element={<OfferEditPage />} />
+        <Route path="offers/:id" element={<OfferEditPage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="delivery" element={<DeliveryPage />} />
+        <Route path="couriers" element={<CouriersPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Route>

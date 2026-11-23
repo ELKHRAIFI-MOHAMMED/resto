@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -39,3 +40,32 @@ class DeliveryZone(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.name_fr
+
+
+class Courier(TimeStampedModel):
+    """
+    A delivery person. Their login is a User with the `courier` role (never
+    staff); this profile holds what dispatch needs.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="courier"
+    )
+    phone = models.CharField(_("phone"), max_length=20, blank=True)
+    zones = models.ManyToManyField(
+        DeliveryZone, blank=True, related_name="couriers", verbose_name=_("zones served")
+    )
+    is_on_duty = models.BooleanField(_("on duty"), default=False)
+    last_assigned_at = models.DateTimeField(_("last assignment"), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("courier")
+        verbose_name_plural = _("couriers")
+        ordering = ["user__first_name", "user__email"]
+
+    def __str__(self) -> str:
+        return self.display_name
+
+    @property
+    def display_name(self) -> str:
+        return self.user.get_full_name() or self.user.email

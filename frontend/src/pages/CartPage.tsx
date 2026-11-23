@@ -1,8 +1,9 @@
-import { Trash2 } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
+import { OfferChoices } from '@/components/OfferChoices'
 import { Money } from '@/components/Price'
 import { ProductImage } from '@/components/ProductImage'
 import { QuantityStepper } from '@/components/QuantityStepper'
@@ -14,6 +15,7 @@ import { describeOrderError } from '@/features/checkout/errors'
 import { useLanguage } from '@/hooks/useLanguage'
 import { cx } from '@/lib/cx'
 import { parseMoney } from '@/lib/money'
+import { cartLineHref, summarizeCartChoices } from '@/lib/offers'
 import { selectItemCount, selectSubtotalCents, useCartStore } from '@/store/cart'
 
 export function CartPage() {
@@ -62,6 +64,11 @@ export function CartPage() {
             <ul className="mt-6 divide-y divide-border border-y border-border">
               {lines.map((line) => {
                 const issue = lineIssues[line.key]
+                const editUrl = cartLineHref(line, true)
+                const editable =
+                  issue !== 'product_not_found' &&
+                  issue !== 'product_unavailable' &&
+                  issue !== 'offer_not_found'
                 return (
                   <li key={line.key} className="flex gap-4 py-6 sm:gap-6">
                     <ProductImage
@@ -74,7 +81,7 @@ export function CartPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline gap-4">
                         <Link
-                          to={`/menu/${line.slug}`}
+                          to={cartLineHref(line)}
                           className="flex-1 font-medium hover:text-accent"
                         >
                           {line.name}
@@ -91,15 +98,16 @@ export function CartPage() {
                             .join(', ')}
                         </p>
                       )}
+                      <OfferChoices summary={summarizeCartChoices(line.choices)} className="mt-1" />
                       {line.specialInstructions && (
                         <p className="mt-1 text-sm text-muted italic">{line.specialInstructions}</p>
                       )}
                       {issue && (
                         <p className="mt-2 text-sm text-danger">
                           {t(`cart.issues.${issue}`)}{' '}
-                          {issue !== 'product_not_found' && issue !== 'product_unavailable' && (
+                          {editable && (
                             <Link
-                              to={`/menu/${line.slug}`}
+                              to={editUrl}
                               className="underline underline-offset-4 hover:text-foreground"
                             >
                               {t('cart.chooseAgain')}
@@ -115,6 +123,16 @@ export function CartPage() {
                             onChange={(quantity) => setQuantity(line.key, quantity)}
                             label={t('cart.quantityOf', { name: line.name })}
                           />
+                        )}
+                        {editable && (
+                          <Link
+                            to={editUrl}
+                            aria-label={t('cart.edit', { name: line.name })}
+                            className="flex h-9 items-center gap-1.5 rounded-full px-3 text-sm text-muted transition-colors hover:bg-surface hover:text-foreground"
+                          >
+                            <Pencil aria-hidden className="size-4" />
+                            <span aria-hidden>{t('cart.editShort')}</span>
+                          </Link>
                         )}
                         <button
                           type="button"

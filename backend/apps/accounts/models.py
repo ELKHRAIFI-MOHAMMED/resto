@@ -15,6 +15,7 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         OWNER = "owner", _("Owner")  # full access, including restaurant settings
         MANAGER = "manager", _("Manager")  # catalog and order management
+        COURIER = "courier", _("Courier")  # delivery app only, never staff
 
     username = None
     email = models.EmailField(_("email address"), unique=True)
@@ -39,6 +40,10 @@ class User(AbstractUser):
 
     def __str__(self) -> str:
         return self.email
+
+    @property
+    def is_courier(self) -> bool:
+        return self.role == self.Role.COURIER and not self.is_staff
 
     @property
     def is_owner(self) -> bool:

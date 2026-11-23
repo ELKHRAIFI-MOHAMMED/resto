@@ -19,7 +19,7 @@ export function Hero() {
     <section className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-14 px-4 pt-10 pb-20 sm:px-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-20 lg:pt-16 lg:pb-28">
       <div className="motion-safe:animate-rise">
         <OpenStatus />
-        <h1 className="mt-8 font-display text-5xl text-balance sm:text-6xl lg:text-[5.5rem] lg:leading-[0.98]">
+        <h1 className="mt-8 font-display text-4xl text-balance hyphens-auto min-[400px]:text-5xl sm:text-6xl lg:text-[5.5rem] lg:leading-[0.98]">
           {t('home.heroTitle')}
         </h1>
         <p className="mt-8 max-w-[34rem] text-lg text-muted">{t('home.heroText')}</p>

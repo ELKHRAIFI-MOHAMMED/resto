@@ -2,9 +2,11 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
+import { OfferChoices } from '@/components/OfferChoices'
 import { Money } from '@/components/Price'
 import { cx } from '@/lib/cx'
 import { parseMoney } from '@/lib/money'
+import { summarizeCartChoices, summarizeChoices } from '@/lib/offers'
 import type { CartLine } from '@/store/cart'
 import type { OrderType, Quote } from '@/types/orders'
 
@@ -67,6 +69,14 @@ export function OrderSummary({ lines, quote, isPending, orderType, hasZone }: Or
                     {options.filter(Boolean).join(', ')}
                   </span>
                 )}
+                <OfferChoices
+                  summary={
+                    item?.offer != null
+                      ? summarizeChoices(item.choices)
+                      : summarizeCartChoices(line.choices)
+                  }
+                  className="text-xs"
+                />
               </span>
               <Money
                 cents={item ? parseMoney(item.line_total) : line.unitPriceCents * line.quantity}

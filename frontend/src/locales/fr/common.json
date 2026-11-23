@@ -104,7 +104,10 @@
     "notFoundTitle": "Ce plat n’est plus à la carte",
     "notFoundText": "Il a peut-être été retiré ou renommé. Le reste de la carte vous attend.",
     "showPhoto": "Afficher la photo {{index}}",
-    "estimateNote": "Le total exact est confirmé avant l’envoi de la commande."
+    "estimateNote": "Le total exact est confirmé avant l’envoi de la commande.",
+    "updateCart": "Mettre à jour",
+    "editing": "Vous modifiez un article de votre panier.",
+    "cancelEdit": "Annuler"
   },
   "cart": {
     "title": "Votre panier",
@@ -134,8 +137,14 @@
       "product_unavailable": "Ce plat n’est pas disponible pour le moment.",
       "variant_required": "Choisissez à nouveau le format de ce plat.",
       "variant_invalid": "Le format choisi n’est plus disponible.",
-      "addon_invalid": "Un supplément choisi n’est plus disponible."
-    }
+      "addon_invalid": "Un supplément choisi n’est plus disponible.",
+      "offer_not_found": "Cette offre n’est plus disponible.",
+      "offer_choices_invalid": "Les plats choisis ne correspondent plus à l’offre : composez-la à nouveau.",
+      "offer_choice_unavailable": "Un plat choisi n’est plus disponible : composez l’offre à nouveau."
+    },
+    "edit": "Modifier {{name}}",
+    "editShort": "Modifier",
+    "updated": "{{name}} mis à jour"
   },
   "notFound": {
     "title": "Page introuvable",
@@ -222,5 +231,27 @@
     "notFoundTitle": "Commande introuvable sur cet appareil",
     "notFoundText": "Les détails d’une commande restent 24 heures dans le navigateur qui l’a passée. Pour toute question, écrivez au restaurant.",
     "contact": "Écrire au restaurant"
+  },
+  "theme": {
+    "toLight": "Passer en mode clair",
+    "toDark": "Passer en mode sombre"
+  },
+  "offers": {
+    "title": "Nos offres",
+    "intro": "Des formules à prix fixe : composez-les avec les plats de votre choix.",
+    "badge": "Offre",
+    "compose": "Composer mon offre",
+    "groupSummary": "{{count}} {{group}}",
+    "choiceLine": "{{group}} : {{items}}",
+    "progress": "{{chosen}} / {{count}} choisis",
+    "remaining": "Encore {{count}} à choisir dans « {{group}} ».",
+    "size": "Taille {{size}}",
+    "dishUnavailable": "Indisponible aujourd’hui",
+    "unavailableOffer": "Cette offre n’est pas disponible pour le moment.",
+    "addOne": "Ajouter : {{name}}",
+    "removeOne": "Enlever : {{name}}",
+    "notFoundTitle": "Cette offre n’est plus disponible",
+    "notFoundText": "Elle est peut-être terminée. Découvrez la carte et les offres du moment.",
+    "metaFallback": "{{name}} : une offre à composer avec vos plats préférés."
   }
 }

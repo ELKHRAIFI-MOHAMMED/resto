@@ -1,8 +1,10 @@
+import { UtensilsCrossed } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, NavLink, Outlet, ScrollRestoration } from 'react-router'
 
 import { CartLink } from '@/components/CartLink'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { Toaster } from '@/components/Toaster'
 import { useRestaurant } from '@/hooks/useCatalog'
 import { cx } from '@/lib/cx'
@@ -11,14 +13,20 @@ function Wordmark() {
   const { t } = useTranslation()
   const { data: restaurant } = useRestaurant()
   return (
-    <Link to="/" className="font-display text-2xl leading-none tracking-wide text-foreground">
+    <Link
+      to="/"
+      className="font-display text-xl leading-none tracking-wide whitespace-nowrap text-foreground sm:text-2xl"
+    >
       {restaurant?.name ?? t('brand.name')}
     </Link>
   )
 }
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  cx('text-sm transition-colors', isActive ? 'text-accent' : 'text-muted hover:text-foreground')
+  cx(
+    'text-sm whitespace-nowrap transition-colors',
+    isActive ? 'text-accent' : 'text-muted hover:text-foreground',
+  )
 
 export function PublicLayout() {
   const { t } = useTranslation()
@@ -42,7 +50,9 @@ export function PublicLayout() {
           <Wordmark />
           <div className="ms-auto flex items-center gap-2 sm:gap-7">
             <NavLink to="/menu" className={navLinkClass}>
-              {t('nav.menu')}
+              {/* Icon on phones, text from the sm breakpoint; the label is always announced. */}
+              <UtensilsCrossed aria-hidden className="size-5 sm:hidden" strokeWidth={1.5} />
+              <span className="sr-only sm:not-sr-only">{t('nav.menu')}</span>
             </NavLink>
             <Link
               to={{ pathname: '/', hash: 'infos' }}
@@ -51,6 +61,7 @@ export function PublicLayout() {
               {t('nav.info')}
             </Link>
             <LanguageSwitcher />
+            <ThemeToggle />
             <CartLink />
           </div>
         </nav>

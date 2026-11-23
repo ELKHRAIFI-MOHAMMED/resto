@@ -86,6 +86,29 @@ Item-level codes in `details.items[]`: `product_not_found`,
 offer: the menu should then open the product detail instead of adding the
 product straight to the cart.
 
+### Offers (packs)
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET | `/offers/` | Current offers (active, within their optional `starts_on`/`ends_on` dates) with their groups: `{id, name, quantity, products: [{id, slug, name, image, is_available, variant_name}]}` |
+| GET | `/offers/{slug}/` | One current offer (404 otherwise) |
+
+A dish picked in an offer is served in its first active size (`variant_name`),
+without extras; the offer price covers everything. An order item is either a
+product or an offer:
+
+```json
+{"offer": 1, "quantity": 1, "special_instructions": "",
+ "choices": [{"group": 1, "products": [4, 4, 6]}, {"group": 2, "products": [10, 10, 11]}]}
+```
+
+Each group must be present once, with exactly `quantity` product ids (repeats
+allowed) taken from that group. Item error codes: `offer_not_found`,
+`offer_choices_invalid`, `offer_choice_unavailable`. Quotes and saved orders
+return the picks as `choices: [{group_name, product, product_name, quantity}]`,
+and the WhatsApp message lists them under the offer line
+(`   Plats: 2x Tacos Poulet (M), 1x Pizza Margherita (Moyenne)`).
+
 ### Placing an order
 
 The client sends **identifiers and quantities only**. Any price fields are
@@ -185,9 +208,9 @@ zone, are given. Item problems come back as `invalid_items` with
 | GET | `/auth/csrf/` | Sets the `csrftoken` cookie (204) |
 | POST | `/auth/login/` | `{email, password}` with the `X-CSRFToken` header; returns the user and sets the HttpOnly `sessionid` cookie |
 | POST | `/auth/logout/` | 204 |
-| GET | `/auth/me/` | Current staff user: `{id, email, first_name, last_name, role, is_owner}` |
+| GET | `/auth/me/` | Current user: `{id, email, first_name, last_name, role, is_owner, is_courier}` |
 
-Only active staff accounts can log in. Every failure returns the same
+Only active staff and courier accounts can log in. Every failure returns the same
 `Invalid email or password.` message, so the endpoint never reveals which
 emails exist.
 
@@ -206,16 +229,42 @@ the `X-CSRFToken` header.
 | CRUD | `products/{id}/variants/` | Variants of a product |
 | CRUD | `products/{id}/images/` | Gallery images (multipart) |
 | CRUD | `addons/` | Shared add-ons |
+| CRUD | `offers/` | Offers with their rules written together: `groups: [{name_fr, name_ar, name_en, quantity (1–20), products: [ids]}]` (1–10 groups, replaced as a whole on update), `price`, `starts_on`, `ends_on`, `is_active`; `image` via multipart. Unpaginated |
 | CRUD | `categories/` | Deleting a category that has products returns 409 `protected` |
 | POST | `categories/reorder/` | `{ids: [3, 1, 2]}` sets the display order |
 | CRUD | `delivery/zones/` | Delivery zones |
 | GET, PATCH | `settings/` | **Owner only.** Restaurant profile and ordering settings; `whatsapp_number` is normalised (e.g. `+212 6 12…` → `212612…`) |
+| CRUD | `couriers/` | Courier accounts: `{email, first_name, last_name, phone, zones: [ids], is_on_duty, is_active, password}` (password write-only); `active_orders` is read-only. Deleting removes the login |
+| PATCH | `orders/{id}/courier/` | `{courier: id \| null}` assigns or unassigns a delivery order (409 if it is not a delivery, is closed, already picked up, or the courier is inactive) |
+| POST | `orders/{id}/auto-assign/` | Picks the on-duty courier of the order's zone with the fewest active deliveries; 409 `no_courier_available` |
 | GET, PUT | `settings/hours/` | **Owner only.** PUT `{hours: [{weekday, opens_at, closes_at, is_closed}]}` replaces the whole week |
+
+## Courier endpoints (`/api/courier/`)
+
+Courier session required (staff get 403). A courier only ever sees the orders
+assigned to them; any other ID returns 404.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| GET, PATCH | `me/` | Profile and zones; only `is_on_duty` is writable |
+| GET | `orders/?scope=active\|done` | Assigned deliveries (done = last completed/cancelled) |
+| GET | `orders/{id}/` | Address, phone, items, notes, amount to collect |
+| POST | `orders/{id}/pickup/` | `confirmed`/`preparing` → `out_for_delivery`, sets `picked_up_at` |
+| POST | `orders/{id}/deliver/` | `out_for_delivery` → `completed`, sets `delivered_at` |
+
+### Automatic dispatch
+
+When staff confirm a delivery order that has no courier and the restaurant
+setting `auto_assign_couriers` is on, the order goes to an on-duty courier
+serving its zone, the one with the fewest active deliveries (ties: the one
+who waited longest). If nobody is available the order stays unassigned and
+staff assign it by hand. Confirmation itself always remains a manual action.
 
 ### Order status workflow
 
 ```
 pending ──▶ confirmed ──▶ preparing ──▶ out_for_delivery ──▶ completed   (delivery)
+             confirmed ─────────────────▶ out_for_delivery              (courier pick-up)
                                     └─▶ ready ─────────────▶ completed   (pickup)
 any non-final status ──▶ cancelled
 ```

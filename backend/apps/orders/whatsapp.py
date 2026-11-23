@@ -77,6 +77,14 @@ def _single_line(value: str) -> str:
     return _WHITESPACE.sub(" ", value or "").strip()
 
 
+def _choices_by_group(item) -> list[tuple[str, list[str]]]:
+    """Offer choices as [(group, ["2x Tacos Poulet (M)", ...])], in the order picked."""
+    groups: dict[str, list[str]] = {}
+    for choice in item.choices.all():
+        groups.setdefault(choice.group_name, []).append(f"{choice.quantity}x {choice.product_name}")
+    return list(groups.items())
+
+
 def build_order_message(order: Order) -> str:
     """Render the message for a saved order (items and add-ons prefetched or not)."""
     text = MESSAGES.get(order.language, MESSAGES["fr"])
@@ -93,6 +101,8 @@ def build_order_message(order: Order) -> str:
         lines.append(f"{item.quantity}x {name} - {money(item.line_total)}")
         for addon in item.addons.all():
             lines.append(f"   + {addon.addon_name}")
+        for group_name, picks in _choices_by_group(item):
+            lines.append(f"   {group_name}: {', '.join(picks)}")
         if item.special_instructions:
             lines.append(f"   {text['note']}: {_single_line(item.special_instructions)}")
 

@@ -19,6 +19,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { cx } from '@/lib/cx'
 import { formatMoney, parseMoney } from '@/lib/money'
 import { ApiError } from '@/services/api'
+import { toOrderItems } from '@/services/orders'
 import { useCartStore } from '@/store/cart'
 import type { OrderType } from '@/types/orders'
 
@@ -115,13 +116,7 @@ export function CheckoutPage() {
         delivery_address: isDelivery ? form.deliveryAddress.trim() : '',
         city: form.city.trim(),
         customer_notes: form.notes.trim(),
-        items: lines.map((line) => ({
-          product: line.productId,
-          variant: line.variantId,
-          addons: line.addonIds,
-          quantity: line.quantity,
-          special_instructions: line.specialInstructions,
-        })),
+        items: toOrderItems(lines),
       },
       {
         onError: (error) => {

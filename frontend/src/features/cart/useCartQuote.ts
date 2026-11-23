@@ -5,6 +5,7 @@ import { itemIssuesOf } from '@/features/checkout/errors'
 import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useLanguage } from '@/hooks/useLanguage'
 import { parseMoney } from '@/lib/money'
+import { cartChoicesFromQuote } from '@/lib/offers'
 import { quoteOrder, toOrderItems } from '@/services/orders'
 import { useCartStore, type CartLine } from '@/store/cart'
 import type { ItemIssue, OrderType, QuoteRequest } from '@/types/orders'
@@ -60,6 +61,7 @@ export function useCartQuote({ orderType = null, deliveryZone = null }: QuoteOpt
       name: item.product_name,
       variantName: item.variant_name,
       addonNames: item.addons.map((addon) => addon.name),
+      ...(item.offer != null ? { choices: cartChoicesFromQuote(item.choices) } : {}),
     }))
     syncLines(updates) // the store raises `pricesChanged` if an amount moved
   }, [quote, quotedLines, syncLines])

@@ -1,5 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router'
 
 import { Money } from '@/components/Price'
 import { QuantityStepper } from '@/components/QuantityStepper'
@@ -9,21 +10,52 @@ import { useAddToCart } from '@/features/cart/useAddToCart'
 import { useLanguage } from '@/hooks/useLanguage'
 import { cx } from '@/lib/cx'
 import { formatMoney, parseMoney } from '@/lib/money'
+import { useCartStore, type CartLine, type NewCartLine } from '@/store/cart'
+import { useToastStore } from '@/store/toast'
 import type { ProductDetail } from '@/types/catalog'
 
 const INSTRUCTIONS_MAX = 255
 
-export function ProductOptionsForm({ product }: { product: ProductDetail }) {
+interface ProductOptionsFormProps {
+  product: ProductDetail
+  /** A cart line to edit: the form starts from its choices and replaces it on submit. */
+  editing?: CartLine
+}
+
+/** Options of the edited line that still exist (the menu may have changed since). */
+function initialChoices(product: ProductDetail, editing?: CartLine) {
+  if (!editing) {
+    // The first (usually smallest) size is preselected: one less tap for most orders.
+    return {
+      variantId: product.variants[0]?.id ?? null,
+      addonIds: [],
+      quantity: 1,
+      instructions: '',
+    }
+  }
+  const variantExists = product.variants.some((item) => item.id === editing.variantId)
+  return {
+    variantId: variantExists ? editing.variantId : null,
+    addonIds: editing.addonIds.filter((addonId) => product.addons.some((a) => a.id === addonId)),
+    quantity: editing.quantity,
+    instructions: editing.specialInstructions,
+  }
+}
+
+export function ProductOptionsForm({ product, editing }: ProductOptionsFormProps) {
   const { t } = useTranslation()
   const language = useLanguage()
+  const navigate = useNavigate()
   const addToCart = useAddToCart()
+  const replaceLine = useCartStore((state) => state.replaceLine)
+  const showToast = useToastStore((state) => state.show)
   const id = useId()
 
-  // The first (usually smallest) size is preselected: one less tap for most orders.
-  const [variantId, setVariantId] = useState<number | null>(product.variants[0]?.id ?? null)
-  const [addonIds, setAddonIds] = useState<number[]>([])
-  const [quantity, setQuantity] = useState(1)
-  const [instructions, setInstructions] = useState('')
+  const [initial] = useState(() => initialChoices(product, editing))
+  const [variantId, setVariantId] = useState<number | null>(initial.variantId)
+  const [addonIds, setAddonIds] = useState<number[]>(initial.addonIds)
+  const [quantity, setQuantity] = useState(initial.quantity)
+  const [instructions, setInstructions] = useState(initial.instructions)
 
   const variant = product.variants.find((item) => item.id === variantId) ?? null
   const addons = product.addons.filter((addon) => addonIds.includes(addon.id))
@@ -41,7 +73,7 @@ export function ProductOptionsForm({ product }: { product: ProductDetail }) {
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
     if (disabled) return
-    addToCart({
+    const line: NewCartLine = {
       productId: product.id,
       slug: product.slug,
       name: product.name,
@@ -53,7 +85,14 @@ export function ProductOptionsForm({ product }: { product: ProductDetail }) {
       unitPriceCents: unitPrice,
       quantity,
       specialInstructions: instructions,
-    })
+    }
+    if (editing) {
+      replaceLine(editing.key, line)
+      showToast({ message: t('cart.updated', { name: product.name }) })
+      navigate('/cart')
+    } else {
+      addToCart(line)
+    }
   }
 
   const optionClass = (checked: boolean) =>
@@ -146,7 +185,7 @@ export function ProductOptionsForm({ product }: { product: ProductDetail }) {
       <div className="flex flex-wrap items-center gap-4 border-t border-border pt-6">
         <QuantityStepper value={quantity} onChange={setQuantity} label={t('product.quantity')} />
         <Button type="submit" disabled={disabled} className="grow basis-56 sm:grow-0 sm:basis-auto">
-          {t('product.addToCart')}
+          {editing ? t('product.updateCart') : t('product.addToCart')}
           <span aria-hidden className="h-4 w-px bg-background/40" />
           <Money cents={unitPrice * quantity} />
         </Button>

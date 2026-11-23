@@ -104,7 +104,10 @@
     "notFoundTitle": "This dish is no longer on the menu",
     "notFoundText": "It may have been removed or renamed. The rest of the menu is waiting for you.",
     "showPhoto": "Show photo {{index}}",
-    "estimateNote": "The exact total is confirmed before you send your order."
+    "estimateNote": "The exact total is confirmed before you send your order.",
+    "updateCart": "Update item",
+    "editing": "You are editing an item in your cart.",
+    "cancelEdit": "Cancel"
   },
   "cart": {
     "title": "Your cart",
@@ -134,8 +137,14 @@
       "product_unavailable": "This dish is not available right now.",
       "variant_required": "Choose the size of this dish again.",
       "variant_invalid": "The chosen size is no longer available.",
-      "addon_invalid": "One of the chosen extras is no longer available."
-    }
+      "addon_invalid": "One of the chosen extras is no longer available.",
+      "offer_not_found": "This deal is no longer available.",
+      "offer_choices_invalid": "The dishes chosen no longer match the deal: build it again.",
+      "offer_choice_unavailable": "A dish you chose is no longer available: build the deal again."
+    },
+    "edit": "Edit {{name}}",
+    "editShort": "Edit",
+    "updated": "{{name}} updated"
   },
   "notFound": {
     "title": "Page not found",
@@ -222,5 +231,27 @@
     "notFoundTitle": "Order not found on this device",
     "notFoundText": "Order details stay for 24 hours in the browser that placed the order. For any question, message the restaurant.",
     "contact": "Message the restaurant"
+  },
+  "theme": {
+    "toLight": "Switch to light mode",
+    "toDark": "Switch to dark mode"
+  },
+  "offers": {
+    "title": "Our deals",
+    "intro": "Fixed-price deals: build them with the dishes you like.",
+    "badge": "Deal",
+    "compose": "Build my deal",
+    "groupSummary": "{{count}} {{group}}",
+    "choiceLine": "{{group}}: {{items}}",
+    "progress": "{{chosen}} / {{count}} chosen",
+    "remaining": "{{count}} more to choose in “{{group}}”.",
+    "size": "Size {{size}}",
+    "dishUnavailable": "Unavailable today",
+    "unavailableOffer": "This deal is not available right now.",
+    "addOne": "Add: {{name}}",
+    "removeOne": "Remove: {{name}}",
+    "notFoundTitle": "This deal is no longer available",
+    "notFoundText": "It may have ended. Have a look at the menu and current deals.",
+    "metaFallback": "{{name}}: a deal to build with your favourite dishes."
   }
 }

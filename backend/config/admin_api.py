@@ -7,7 +7,8 @@ from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
 from apps.categories.views import AdminCategoryViewSet
-from apps.delivery.views import AdminDeliveryZoneViewSet
+from apps.delivery.views import AdminCourierViewSet, AdminDeliveryZoneViewSet
+from apps.offers.views import AdminOfferViewSet
 from apps.orders.views import AdminDashboardView, AdminOrderViewSet
 from apps.products.views import (
     AdminAddonViewSet,
@@ -21,7 +22,9 @@ router = SimpleRouter()
 router.register("categories", AdminCategoryViewSet, basename="admin-category")
 router.register("products", AdminProductViewSet, basename="admin-product")
 router.register("addons", AdminAddonViewSet, basename="admin-addon")
+router.register("offers", AdminOfferViewSet, basename="admin-offer")
 router.register("delivery/zones", AdminDeliveryZoneViewSet, basename="admin-delivery-zone")
+router.register("couriers", AdminCourierViewSet, basename="admin-courier")
 router.register("orders", AdminOrderViewSet, basename="admin-order")
 
 product_router = SimpleRouter()
