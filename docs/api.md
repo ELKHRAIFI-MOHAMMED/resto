@@ -275,5 +275,5 @@ order is confirmed.
 ### Uploads
 
 Images only (`jpg`, `jpeg`, `png`, `webp`), verified with Pillow. Limits:
-5 MB (`MAX_IMAGE_UPLOAD_SIZE`) and 6000 px per side. Files are stored under
+4 MB (`MAX_IMAGE_UPLOAD_SIZE`) and 6000 px per side. Files are stored under
 random UUID names.

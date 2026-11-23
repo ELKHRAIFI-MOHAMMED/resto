@@ -145,6 +145,58 @@ The backend runs anywhere Python 3.12+ runs:
   folder, as in `frontend/deploy/nginx.conf`. Keep the app and the API on the
   same domain so session and CSRF cookies work without CORS.
 
+## 8b. Vercel + Supabase (serverless)
+
+One Vercel project serves everything from the repository root
+(`vercel.json`):
+
+| Path | Served by |
+| --- | --- |
+| `/`, `/menu`, `/admin`, `/livreur`, … | the React build (`frontend/dist`), static |
+| `/api/*`, `/django-admin/*`, `/static/*`, `/sitemap.xml`, `/robots.txt` | Django, as one Python function (`api/index.py`, settings `config.settings.vercel`) |
+
+Same domain for both, so session and CSRF cookies work as in the Docker
+setup. The database is Supabase PostgreSQL through its connection pooler;
+uploaded photos go to a public Supabase Storage bucket (a function's disk is
+not kept). The function runs in `iad1` (US East), next to a Supabase project
+in `us-east-1`; change `regions` in `vercel.json` if the database is elsewhere.
+
+**Environment variables (Vercel → Settings → Environment Variables)**
+
+| Variable | Source |
+| --- | --- |
+| `POSTGRES_URL` | Added by the Supabase integration (transaction pooler, port 6543) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Added by the Supabase integration; server-side only, used for Storage |
+| `DJANGO_SECRET_KEY` | **Add it**: a long random value, e.g. `python -c "import secrets; print(secrets.token_urlsafe(64))"` |
+| `DJANGO_ALLOWED_HOSTS` | Only for a custom domain (e.g. `resto.ma,www.resto.ma`); Vercel domains are allowed automatically |
+| `PUBLIC_SITE_URL` | Optional, e.g. `https://resto.ma` (defaults to the Vercel production domain) |
+
+**Preparing the database (once, then after each release with migrations)**,
+from a computer, with `DATABASE_URL` set to the Supabase *session* pooler URL
+(`POSTGRES_URL_NON_POOLING`, port 5432) and `DJANGO_SETTINGS_MODULE=config.settings.vercel`:
+
+```bash
+cd backend
+python manage.py migrate
+python manage.py setup_supabase     # cache table, API lockdown, "media" bucket
+python manage.py createsuperuser    # first owner account
+```
+
+**Supabase Data API lockdown.** Supabase publishes the `public` schema over
+its REST API, reachable with the public anon key. After every `migrate`,
+RestoFlow revokes the `anon` and `authenticated` roles' access to every
+Django table and enables row level security on them (`apps/core/supabase.py`);
+Django connects as the table owner and is not affected. Check it with
+`curl -H "apikey: <anon key>" https://<project>.supabase.co/rest/v1/accounts_user`:
+the answer must be a `42501` permission error.
+
+**Limits of this setup**
+
+- Uploads are capped at 4 MB (Vercel rejects request bodies over 4.5 MB).
+- A cold start (first request after a quiet period) takes a second or two.
+- Migrations are not run by the deployment: run them as above before
+  deploying code that needs them.
+
 ## 9. Pre-launch checklist
 
 - [ ] `.env.production` filled, no placeholder left; file not committed

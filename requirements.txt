@@ -1,0 +1,2 @@
+# Python dependencies of the Vercel function (api/index.py): the backend's.
+-r backend/requirements.txt

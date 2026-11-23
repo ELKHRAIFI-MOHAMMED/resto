@@ -53,7 +53,7 @@
       "image": "الصورة",
       "chooseImage": "اختيار صورة",
       "removeImage": "إزالة الصورة",
-      "imageHint": "JPG أو PNG أو WebP، بحد أقصى 5 ميغابايت.",
+      "imageHint": "JPG أو PNG أو WebP، بحد أقصى 4 ميغابايت.",
       "translations": "الترجمات",
       "french": "الفرنسية",
       "arabic": "العربية",

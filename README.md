@@ -182,7 +182,7 @@ All variables live in the root `.env` (template: [.env.example](.env.example)).
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` | Django, Docker | Database connection |
 | `ORDER_REFERENCE_PREFIX` | Django | Prefix of order references (default `RF`, e.g. `RF-2026-0001`) |
 | `THROTTLE_ANON`, `THROTTLE_ORDERS`, `THROTTLE_LOGIN` | Django | Rate limits (defaults `120/minute`, `10/minute`, `5/minute`) |
-| `MAX_IMAGE_UPLOAD_SIZE` | Django | Maximum upload size in bytes (default 5 MB) |
+| `MAX_IMAGE_UPLOAD_SIZE` | Django | Maximum upload size in bytes (default 4 MB, under Vercel’s 4.5 MB request limit) |
 | `PUBLIC_SITE_URL` | Django | Public address of the site, used for absolute URLs in `sitemap.xml` and `robots.txt` |
 | `DATABASE_URL` | Django | Optional; overrides the `POSTGRES_*` values |
 | `DB_CONN_MAX_AGE` | Django | Seconds to keep database connections open: 60 in production, 0 in development (the dev server uses a new thread, hence a new connection, per request) |
@@ -272,6 +272,12 @@ cp .env.production.example .env.production   # fill every placeholder
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 docker compose -f docker-compose.prod.yml --env-file .env.production exec backend python manage.py createsuperuser
 ```
+
+**Serverless alternative: Vercel + Supabase.** The repository also deploys as
+a single Vercel project (`vercel.json`, `api/index.py`): the React build is
+static, Django runs as a Python function, the database is Supabase
+PostgreSQL and uploaded photos go to Supabase Storage. See
+[docs/deployment.md, section 8b](docs/deployment.md#8b-vercel--supabase-serverless).
 
 Put a TLS proxy in front (e.g. Caddy). The full guide covers HTTPS, backups,
 updates, hosting without Docker and a pre-launch checklist:

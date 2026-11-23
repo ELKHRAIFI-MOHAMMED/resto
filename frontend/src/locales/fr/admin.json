@@ -53,7 +53,7 @@
       "image": "Image",
       "chooseImage": "Choisir une image",
       "removeImage": "Retirer l’image",
-      "imageHint": "JPG, PNG ou WebP, 5 Mo maximum.",
+      "imageHint": "JPG, PNG ou WebP, 4 Mo maximum.",
       "translations": "Traductions",
       "french": "Français",
       "arabic": "Arabe",
