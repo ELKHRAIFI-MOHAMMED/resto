@@ -4,6 +4,7 @@ import json
 from io import BytesIO
 
 import pytest
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.base import ContentFile
 
 from apps.core import storage as storage_module
@@ -122,3 +123,46 @@ def test_storage_reports_api_errors(monkeypatch):
 def test_lockdown_is_a_no_op_outside_supabase():
     # The test database has no Supabase API roles (anon, authenticated).
     assert secure_supabase_tables() == []
+
+
+def _call(app):
+    captured = {}
+
+    def start_response(status, headers):
+        captured["status"] = status
+
+    body = b"".join(app({}, start_response))
+    return captured["status"], body.decode()
+
+
+def test_startup_failure_names_the_missing_setting(monkeypatch):
+    import django.core.wsgi
+
+    from config import serverless
+
+    def broken():
+        raise ImproperlyConfigured("Set the DJANGO_SECRET_KEY environment variable")
+
+    monkeypatch.setattr(django.core.wsgi, "get_wsgi_application", broken)
+
+    status, body = _call(serverless.build_app())
+
+    assert status.startswith("503")
+    assert "DJANGO_SECRET_KEY" in body
+
+
+def test_other_startup_failures_stay_generic(monkeypatch):
+    import django.core.wsgi
+
+    from config import serverless
+
+    def broken():
+        raise RuntimeError("password=hunter2")
+
+    monkeypatch.setattr(django.core.wsgi, "get_wsgi_application", broken)
+
+    status, body = _call(serverless.build_app())
+
+    assert status.startswith("503")
+    assert "RuntimeError" in body
+    assert "hunter2" not in body
