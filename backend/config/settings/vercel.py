@@ -54,6 +54,10 @@ CSRF_TRUSTED_ORIGINS = list(
 if os.environ.get("VERCEL_PROJECT_PRODUCTION_URL") and not env.str("PUBLIC_SITE_URL", default=""):
     PUBLIC_SITE_URL = f"https://{os.environ['VERCEL_PROJECT_PRODUCTION_URL']}"
 
+# No release step on Vercel: each new instance applies pending migrations and
+# fills a brand-new database with the initial data (apps/core/bootstrap.py).
+AUTO_BOOTSTRAP_DATABASE = env.bool("AUTO_BOOTSTRAP_DATABASE", default=True)
+
 # Vercel terminates HTTPS and already redirects http:// to https://.
 SECURE_SSL_REDIRECT = False
 

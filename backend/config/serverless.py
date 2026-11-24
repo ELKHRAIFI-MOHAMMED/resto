@@ -6,6 +6,9 @@ platform would only show a bare "FUNCTION_INVOCATION_FAILED". Instead, the
 traceback goes to the function logs and the response names the problem.
 Only configuration errors are described: their messages name a setting or
 an environment variable, never a value.
+
+On a successful start, the database is prepared when needed (pending
+migrations, initial data for a brand-new database): see apps/core/bootstrap.py.
 """
 
 import os
@@ -18,10 +21,19 @@ def build_app(settings_module: str = "config.settings.vercel"):
     try:
         from django.core.wsgi import get_wsgi_application
 
-        return get_wsgi_application()
+        app = get_wsgi_application()
     except Exception as error:
         traceback.print_exc(file=sys.stderr)  # Vercel → Deployments → Logs
         return _startup_failure_app(error)
+
+    from django.conf import settings
+
+    if getattr(settings, "AUTO_BOOTSTRAP_DATABASE", False):
+        # Migrations and, on a brand-new database, the initial data (see bootstrap.py).
+        from apps.core.bootstrap import bootstrap_on_startup
+
+        bootstrap_on_startup()
+    return app
 
 
 def _startup_failure_app(error: Exception):

@@ -295,9 +295,21 @@ class Command(BaseCommand):
         parser.add_argument(
             "--no-images", action="store_true", help="Do not attach the demo photos."
         )
+        parser.add_argument(
+            "--no-couriers",
+            action="store_true",
+            help="Do not create the demo courier accounts (their password is public).",
+        )
 
     @transaction.atomic
-    def handle(self, *args, force: bool = False, no_images: bool = False, **options):
+    def handle(
+        self,
+        *args,
+        force: bool = False,
+        no_images: bool = False,
+        no_couriers: bool = False,
+        **options,
+    ):
         if not settings.DEBUG and not force:
             raise CommandError("Refusing to load demo data with DEBUG off (use --force).")
 
@@ -360,7 +372,8 @@ class Command(BaseCommand):
         for order, offer_data in enumerate(OFFERS):
             self._upsert_offer(order, *offer_data, with_images=not no_images)
 
-        for email, first, last, phone, zone_names in COURIERS:
+        couriers = [] if no_couriers else COURIERS
+        for email, first, last, phone, zone_names in couriers:
             user = User.objects.filter(email=email).first()
             if user is None:
                 user = User.objects.create_user(
@@ -381,7 +394,11 @@ class Command(BaseCommand):
                 f"Demo content loaded: {len(CATEGORIES)} categories, {product_count} products, "
                 f"{len(ADDONS)} add-ons, {len(OFFERS)} offers, {len(ZONES)} delivery zones, "
                 f"{len(slots)} opening slots, "
-                f"{len(COURIERS)} couriers (password {DEMO_COURIER_PASSWORD})."
+                + (
+                    f"{len(couriers)} couriers (password {DEMO_COURIER_PASSWORD})."
+                    if couriers
+                    else "no courier accounts."
+                )
             )
         )
         self.stdout.write(

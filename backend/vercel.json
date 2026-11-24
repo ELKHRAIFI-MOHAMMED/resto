@@ -3,23 +3,42 @@
   "framework": null,
   "buildCommand": "",
   "outputDirectory": "public",
-  "regions": ["iad1"],
+  "regions": [
+    "iad1"
+  ],
   "functions": {
     "api/index.py": {
-      "maxDuration": 30,
-      "includeFiles": "{apps/**,config/**,manage.py}",
-      "excludeFiles": "{tests/**,media/**,demo/**,staticfiles/**,.venv/**,**/__pycache__/**}"
+      "maxDuration": 60,
+      "includeFiles": "{apps/**,config/**,demo/**,manage.py}",
+      "excludeFiles": "{tests/**,media/**,staticfiles/**,.venv/**,**/__pycache__/**}"
     }
   },
-  "rewrites": [{ "source": "/(.*)", "destination": "/api/index" }],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Strict-Transport-Security", "value": "max-age=2592000; includeSubDomains" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=2592000; includeSubDomains"
+        }
       ]
     }
   ]

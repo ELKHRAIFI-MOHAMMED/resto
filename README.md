@@ -182,6 +182,8 @@ All variables live in the root `.env` (template: [.env.example](.env.example)).
 | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT` | Django, Docker | Database connection |
 | `ORDER_REFERENCE_PREFIX` | Django | Prefix of order references (default `RF`, e.g. `RF-2026-0001`) |
 | `THROTTLE_ANON`, `THROTTLE_ORDERS`, `THROTTLE_LOGIN` | Django | Rate limits (defaults `120/minute`, `10/minute`, `5/minute`) |
+| `INITIAL_OWNER_EMAIL`, `INITIAL_OWNER_PASSWORD` | Django | First owner account, created with the initial data on a brand-new database (Vercel, Docker) |
+| `AUTO_BOOTSTRAP_DATABASE` | Django (Vercel) | Apply migrations and load the initial data on start (default `true` on Vercel) |
 | `MAX_IMAGE_UPLOAD_SIZE` | Django | Maximum upload size in bytes (default 4 MB, under Vercel’s 4.5 MB request limit) |
 | `PUBLIC_SITE_URL` | Django | Public address of the site, used for absolute URLs in `sitemap.xml` and `robots.txt` |
 | `DATABASE_URL` | Django | Optional; overrides the `POSTGRES_*` values |

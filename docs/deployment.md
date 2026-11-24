@@ -171,16 +171,39 @@ in `us-east-1`; change `regions` in `vercel.json` if the database is elsewhere.
 | `DJANGO_ALLOWED_HOSTS` | Only for a custom domain (e.g. `resto.ma,www.resto.ma`); Vercel domains are allowed automatically |
 | `PUBLIC_SITE_URL` | Optional, e.g. `https://resto.ma` (defaults to the Vercel production domain) |
 
-**Preparing the database (once, then after each release with migrations)**,
-from a computer, with `DATABASE_URL` set to the Supabase *session* pooler URL
-(`POSTGRES_URL_NON_POOLING`, port 5432) and `DJANGO_SETTINGS_MODULE=config.settings.vercel`:
+| `INITIAL_OWNER_EMAIL`, `INITIAL_OWNER_PASSWORD` | Optional: first owner account, created with the initial data on a brand-new database |
+| `AUTO_BOOTSTRAP_DATABASE` | Optional, `true` by default (see below) |
+
+**The database prepares itself.** There is no release step on Vercel, so
+each new function instance checks the database when it starts
+(`apps/core/bootstrap.py`, about 0.15 s):
+
+- pending migrations are applied, then the Supabase preparation runs (cache
+  table, Data API lockdown, public `media` bucket);
+- a brand-new database (no account, no category, no dish) also receives the
+  initial menu: restaurant profile and hours, 6 categories, 14 dishes with
+  sizes, extras and photos, 2 offers, 6 delivery zones, and the owner account
+  from `INITIAL_OWNER_EMAIL` / `INITIAL_OWNER_PASSWORD`. No courier account is
+  created (add them in Admin → Couriers). Once anything exists this is never
+  loaded again, so real data is never overwritten.
+
+It all runs in one transaction holding a PostgreSQL advisory lock: when
+several instances start together, one does the work and the others wait,
+then find nothing left to do. A failure is rolled back, logged, and retried
+by the next instance; the app still starts. Set `AUTO_BOOTSTRAP_DATABASE=false`
+to run the same steps by hand instead, from a computer, with `DATABASE_URL`
+set to the session pooler URL (`POSTGRES_URL_NON_POOLING`, port 5432) and
+`DJANGO_SETTINGS_MODULE=config.settings.vercel`:
 
 ```bash
 cd backend
 python manage.py migrate
 python manage.py setup_supabase     # cache table, API lockdown, "media" bucket
-python manage.py createsuperuser    # first owner account
+python manage.py load_initial_data  # brand-new database only
+python manage.py createsuperuser    # if INITIAL_OWNER_* were not set
 ```
+
+The Docker image does the same on start (`docker-entrypoint.sh`).
 
 **Supabase Data API lockdown.** Supabase publishes the `public` schema over
 its REST API, reachable with the public anon key. After every `migrate`,
@@ -194,8 +217,8 @@ the answer must be a `42501` permission error.
 
 - Uploads are capped at 4 MB (Vercel rejects request bodies over 4.5 MB).
 - A cold start (first request after a quiet period) takes a second or two.
-- Migrations are not run by the deployment: run them as above before
-  deploying code that needs them.
+- The first start on a brand-new database takes longer (migrations,
+  initial data and photo uploads, a few seconds); `maxDuration` is 60 s.
 
 ## 8c. Vercel, backend and frontend as two projects
 

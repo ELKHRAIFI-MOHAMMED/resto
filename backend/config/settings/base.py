@@ -92,6 +92,11 @@ PUBLIC_SITE_URL = env.str("PUBLIC_SITE_URL", default="http://localhost:5173")
 # free for the React administration dashboard.
 DJANGO_ADMIN_URL = env.str("DJANGO_ADMIN_URL", default="django-admin/")
 
+# First owner account, created with the initial data on a brand-new database
+# (see apps/core/bootstrap.py). Leave empty to create it by hand instead.
+INITIAL_OWNER_EMAIL = env.str("INITIAL_OWNER_EMAIL", default="")
+INITIAL_OWNER_PASSWORD = env.str("INITIAL_OWNER_PASSWORD", default="")
+
 # ---------------------------------------------------------------------------
 # Database (PostgreSQL)
 # ---------------------------------------------------------------------------
