@@ -2,17 +2,17 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "rewrites": [
-    { "source": "/api/:path(.*)", "destination": "https://resto-orcin-iota.vercel.app/api/:path" },
+    { "source": "/api/:path(.*)", "destination": "https://resto-six-beta.vercel.app/api/:path" },
     {
       "source": "/django-admin/:path(.*)",
-      "destination": "https://resto-orcin-iota.vercel.app/django-admin/:path"
+      "destination": "https://resto-six-beta.vercel.app/django-admin/:path"
     },
     {
       "source": "/static/:path(.*)",
-      "destination": "https://resto-orcin-iota.vercel.app/static/:path"
+      "destination": "https://resto-six-beta.vercel.app/static/:path"
     },
-    { "source": "/sitemap.xml", "destination": "https://resto-orcin-iota.vercel.app/sitemap.xml" },
-    { "source": "/robots.txt", "destination": "https://resto-orcin-iota.vercel.app/robots.txt" },
+    { "source": "/sitemap.xml", "destination": "https://resto-six-beta.vercel.app/sitemap.xml" },
+    { "source": "/robots.txt", "destination": "https://resto-six-beta.vercel.app/robots.txt" },
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ],
   "headers": [

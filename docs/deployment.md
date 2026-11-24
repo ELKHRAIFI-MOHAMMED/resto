@@ -233,7 +233,7 @@ cookies of the admin and courier apps keep working (cookies of another
 `*.vercel.app` site would be third-party cookies, blocked by browsers).
 
 The backend URL is written in `frontend/vercel.json`
-(`https://resto-orcin-iota.vercel.app`): replace it if the backend project gets
+(`https://resto-six-beta.vercel.app`): replace it if the backend project gets
 another domain. Backend environment variables: as in 8b, plus
 
 | Variable | Value |
