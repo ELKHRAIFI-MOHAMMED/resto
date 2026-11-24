@@ -15,6 +15,8 @@ venv/
 htmlcov/
 
 # Django
+# Data exports with account hashes (e.g. restoflow-data.local.sql)
+*.local.sql
 backend/media/
 backend/staticfiles/
 *.sqlite3
